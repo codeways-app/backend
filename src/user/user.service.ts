@@ -24,10 +24,10 @@ export class UserService {
     return user;
   }
 
-  public async findByEmail(email: string) {
+  public async findByLogin(login: string) {
     const user = await this.prismaService.user.findUnique({
       where: {
-        email,
+        login,
       },
       include: {
         accounts: true,
@@ -37,18 +37,18 @@ export class UserService {
   }
 
   public async create(
+    login: string,
     email: string,
     password: string,
-    displayName: string,
     picture: string,
     method: AuthMethod,
     isVerified: boolean,
   ) {
     const user = await this.prismaService.user.create({
       data: {
+        login,
         email,
         password: password ? await hash(password) : '',
-        displayName,
         picture,
         method,
         isVerified,
