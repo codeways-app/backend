@@ -4,10 +4,13 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { RegisterDto } from './dto/register.dto';
+
+import { RegisterDto } from './dto';
+import { LoginDto } from './dto';
+
 import { UserService } from '../user/user.service';
-import { AuthMethod, User } from '../../generated/prisma';
-import { LoginDto } from './dto/login.dto';
+import { AuthMethod } from '../../generated/prisma';
+
 import { verify } from 'argon2';
 
 @Injectable()
@@ -17,7 +20,7 @@ export class AuthService {
   public async register(dto: RegisterDto) {
     const isExists = await this.userService.findByLogin(dto.email);
     if (isExists) {
-      throw new ConflictException('user already exists');
+      throw new ConflictException('User already exists');
     }
 
     const newUser = await this.userService.create(
@@ -43,16 +46,10 @@ export class AuthService {
 
     if (!isValidPassword) {
       throw new UnauthorizedException(
-        'Not true password. Try again or resetpasword',
+        'Wrong password. Try again or reset your pasword',
       );
     }
 
-    return this.sessionSave(user);
-  }
-
-  public async logout() {}
-
-  private sessionSave(user: User) {
     return console.log(user);
   }
 }
