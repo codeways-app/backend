@@ -12,15 +12,24 @@ import { UserService } from '../user/user.service';
 import { AuthMethod } from '../../generated/prisma';
 
 import { verify } from 'argon2';
+import { SessionService } from '../session/session.service';
 
 @Injectable()
 export class AuthService {
-  public constructor(private readonly userService: UserService) {}
+  public constructor(
+    private readonly userService: UserService,
+    private readonly sessionService: SessionService,
+  ) {}
 
   public async register(dto: RegisterDto) {
-    const isExists = await this.userService.findByLogin(dto.email);
-    if (isExists) {
-      throw new ConflictException('User already exists');
+    const isLoginExists = await this.userService.findByLogin(dto.login);
+    const isEmailExists = await this.userService.findByEmail(dto.email);
+
+    if (isLoginExists) {
+      throw new ConflictException('Login already exists');
+    }
+    if (isEmailExists) {
+      throw new ConflictException('Email already exists');
     }
 
     const newUser = await this.userService.create(
@@ -32,7 +41,7 @@ export class AuthService {
       false,
     );
 
-    return newUser;
+    return this.sessionService.encrypt({ login: newUser.login });
   }
 
   public async login(dto: LoginDto) {
