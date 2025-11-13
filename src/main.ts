@@ -38,7 +38,7 @@ async function bootstrap() {
 
   SwaggerModule.setup('api-docs', app, document);
 
-  app.getHttpAdapter().get('/api-docs.yaml', (_req: Request, res: Response) => {
+  app.getHttpAdapter().get('/docs-yaml', (_req: Request, res: Response) => {
     res.setHeader('Content-Type', 'text/yaml');
     res.send(yamlDocument);
   });
@@ -46,4 +46,4 @@ async function bootstrap() {
   await app.listen(config.getOrThrow<number>('APPLICATION_PORT'));
 }
 
-bootstrap();
+void bootstrap();
