@@ -1,12 +1,14 @@
-/* eslint-disable @typescript-eslint/no-floating-promises */
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import * as YAML from 'yaml';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import type { Request, Response } from 'express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   const config = app.get(ConfigService);
 
@@ -32,8 +34,14 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
+  const yamlDocument = YAML.stringify(document);
 
   SwaggerModule.setup('api-docs', app, document);
+
+  app.getHttpAdapter().get('/api-docs.yaml', (_req: Request, res: Response) => {
+    res.setHeader('Content-Type', 'text/yaml');
+    res.send(yamlDocument);
+  });
 
   await app.listen(config.getOrThrow<number>('APPLICATION_PORT'));
 }
