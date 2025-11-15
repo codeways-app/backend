@@ -41,7 +41,14 @@ export class AuthService {
       false,
     );
 
-    return this.sessionService.encrypt({ login: newUser.login });
+    return {
+      accessToken: await this.sessionService.encrypt({
+        sub: newUser.id,
+        login: newUser.login,
+        email: newUser.email,
+        role: newUser.role,
+      }),
+    };
   }
 
   public async login(dto: LoginDto) {
@@ -59,6 +66,13 @@ export class AuthService {
       );
     }
 
-    return console.log(user);
+    return {
+      accessToken: await this.sessionService.encrypt({
+        sub: user.id,
+        login: user.login,
+        email: user.email,
+        role: user.role,
+      }),
+    };
   }
 }
