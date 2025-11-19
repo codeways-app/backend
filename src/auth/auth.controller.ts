@@ -6,12 +6,14 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 
 import { TokensResponse } from './types';
+import { Recaptcha } from '@nestlab/google-recaptcha';
 
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   public constructor(private readonly authService: AuthService) {}
 
+  @Recaptcha()
   @Post('register')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'User registration' })
