@@ -18,7 +18,11 @@ export class MailService {
     this.transporter = createTransport({
       host,
       port,
+      secure: false,
       auth: { user, pass },
+      tls: {
+        rejectUnauthorized: false, // ОБЯЗАТЕЛЬНО для серверов REG.RU
+      },
     });
   }
 
