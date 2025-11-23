@@ -10,12 +10,14 @@ import { TokenType } from '../../../generated/prisma';
 
 import { VerifyDto } from '../dto';
 
-import { registerMessage, registerTitle } from './messages/register.message';
-import { UserService } from '../../user';
+import { registerMessage, registerTitle } from './mails/register.mail';
+import { twoFactorMessage, twoFactorTitle } from './mails/two-factor.mail';
 import {
-  twoFactorMessage,
-  twoFactorTitle,
-} from './messages/two-factor.message';
+  passwordResetTitle,
+  passwordResetMessage,
+} from './mails/password-reset.mail';
+
+import { UserService } from '../../user';
 
 @Injectable()
 export class EmailConfirmationService {
@@ -25,39 +27,52 @@ export class EmailConfirmationService {
     private readonly userService: UserService,
   ) {}
 
-  public async sendRegisterToken(email: string): Promise<void> {
-    const isEmailExists = await this.userService.findByEmail(email);
+  private forms: Record<
+    TokenType,
+    { title: string; message: (token: string) => string }
+  > = {
+    [TokenType.VERIFICATION]: {
+      title: registerTitle,
+      message: (token: string) => registerMessage(token),
+    },
+    [TokenType.TWO_FACTOR]: {
+      title: twoFactorTitle,
+      message: (token: string) => twoFactorMessage(token),
+    },
+    [TokenType.PASSWORD_RESET]: {
+      title: passwordResetTitle,
+      message: (token: string) => passwordResetMessage(token),
+    },
+  };
 
-    if (isEmailExists) {
-      throw new ConflictException('Email already exists');
+  public async sendTokenByType(
+    email: string,
+    tokenType: TokenType,
+  ): Promise<void> {
+    if (tokenType === TokenType.VERIFICATION) {
+      const isEmailExists = await this.userService.findByEmail(email);
+
+      if (isEmailExists) {
+        throw new ConflictException('Email already exists');
+      }
     }
 
-    const verificationToken = await this.prismaService.token.findFirst({
+    const tokenRecord = await this.prismaService.token.findFirst({
       where: {
         email,
-        type: TokenType.VERIFICATION,
+        type: tokenType,
       },
     });
 
+    if (!tokenRecord) {
+      throw new BadRequestException('Token not found');
+    }
+
+    const form = this.forms[tokenType];
     await this.mailService.sendToken(
       email,
-      registerTitle,
-      registerMessage(verificationToken?.token),
-    );
-  }
-
-  public async sendTwoFactorToken(email: string): Promise<void> {
-    const twoFactorToken = await this.prismaService.token.findFirst({
-      where: {
-        email,
-        type: TokenType.VERIFICATION,
-      },
-    });
-
-    await this.mailService.sendToken(
-      email,
-      twoFactorTitle,
-      twoFactorMessage(twoFactorToken?.token),
+      form.title,
+      form.message(tokenRecord?.token),
     );
   }
 
@@ -91,27 +106,31 @@ export class EmailConfirmationService {
     return verificationToken;
   }
 
-  public async isVerificationTokenMatch(dto: VerifyDto) {
+  public async deleteVerificationToken(email: string, tokenType: TokenType) {
+    await this.prismaService.token.deleteMany({
+      where: {
+        email,
+        type: tokenType,
+      },
+    });
+  }
+
+  public async isVerificationTokenMatch(dto: VerifyDto, tokenType: TokenType) {
     const verificationToken = await this.prismaService.token.findFirst({
       where: {
         email: dto.email,
-        type: TokenType.VERIFICATION,
+        type: tokenType,
       },
     });
 
     if (dto.token !== verificationToken?.token) {
       throw new BadRequestException('Verification token is wrong');
     }
+    if (verificationToken.expiresIn < new Date()) {
+      await this.deleteVerificationToken(dto.email, tokenType);
+      throw new BadRequestException('Verification token has expired');
+    }
 
     return dto;
-  }
-
-  public async deleteisVerificationToken(email: string) {
-    await this.prismaService.token.deleteMany({
-      where: {
-        email,
-        type: TokenType.VERIFICATION,
-      },
-    });
   }
 }

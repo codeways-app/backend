@@ -12,6 +12,7 @@ import { LoginDto } from '../dto';
 
 import { verify } from 'argon2';
 import { TwoFactorDto } from '../dto/two-factor.dto';
+import { TokenType } from '../../../generated/prisma';
 
 @Injectable()
 export class LoginService {
@@ -40,8 +41,10 @@ export class LoginService {
 
     if (isTwoFactorEnable) {
       await this.emailConfirmationService.generateVerificationToken(user.email);
-      await this.emailConfirmationService.sendTwoFactorToken(user.email);
-      console.log(user);
+      await this.emailConfirmationService.sendTokenByType(
+        user.email,
+        TokenType.TWO_FACTOR,
+      );
 
       return { message: 'Two-Factor Token successful sent' };
     }
@@ -63,10 +66,18 @@ export class LoginService {
       throw new NotFoundException(`User ${dto.login} not found`);
     }
 
-    await this.emailConfirmationService.isVerificationTokenMatch({
-      email: user.email,
-      token: dto.token,
-    });
+    await this.emailConfirmationService.isVerificationTokenMatch(
+      {
+        email: user.email,
+        token: dto.token,
+      },
+      TokenType.TWO_FACTOR,
+    );
+
+    await this.emailConfirmationService.deleteVerificationToken(
+      user.email,
+      TokenType.TWO_FACTOR,
+    );
 
     return {
       accessToken: await this.sessionService.encrypt({
