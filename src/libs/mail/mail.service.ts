@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Resend } from 'resend';
@@ -19,7 +18,6 @@ export class MailService {
     subject: string,
     html: string,
   ): Promise<{ id: string; object: string }> {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const result = await this.resend.emails.send({
       from: 'Codeways Support <support@codeways.online>',
       to,

@@ -21,9 +21,7 @@ export class RegisterService {
 
   public async sendCode(dto: EmailDto) {
     await this.emailConfirmationService.generateVerificationToken(dto.email);
-    await this.emailConfirmationService.sendRegisterVerificationToken(
-      dto.email,
-    );
+    await this.emailConfirmationService.sendRegisterToken(dto.email);
 
     return { message: 'Verification code was sent to email.' };
   }

@@ -7,6 +7,7 @@ import { LoginService } from './login';
 
 import { EmailDto, VerifyDto, RegisterDto, LoginDto } from './dto';
 import { TokensResponse } from './types';
+import { TwoFactorDto } from './dto/two-factor.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -90,9 +91,26 @@ export class AuthController {
   })
   @ApiResponse({
     status: 401,
-    description: 'Wrong user credentials',
+    description: 'Invalid login or password',
   })
   public async login(@Body() dto: LoginDto) {
     return this.loginService.login(dto);
+  }
+
+  @Post('login/two-factor')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Two factor login' })
+  @ApiBody({ type: LoginDto })
+  @ApiResponse({
+    status: 200,
+    type: TokensResponse,
+    description: 'User successful autheticated',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Invalid Two-Factor Token',
+  })
+  public async twoFactor(@Body() dto: TwoFactorDto) {
+    return this.loginService.twoFactor(dto);
   }
 }

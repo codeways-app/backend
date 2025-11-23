@@ -1,9 +1,20 @@
 import { Module } from '@nestjs/common';
-import { LoginService } from './login.service';
+
 import { UserService } from '../../user';
 import { SessionService } from '../../session';
+import { MailModule } from '../../libs/mail';
+
+import { EmailConfirmationService } from '../email-confirmation';
+
+import { LoginService } from './login.service';
 
 @Module({
-  providers: [LoginService, UserService, SessionService],
+  imports: [MailModule],
+  providers: [
+    LoginService,
+    UserService,
+    SessionService,
+    EmailConfirmationService,
+  ],
 })
 export class LoginModule {}
