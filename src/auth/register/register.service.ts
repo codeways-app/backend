@@ -4,7 +4,8 @@ import {
   Injectable,
 } from '@nestjs/common';
 
-import { AuthMethod } from '../../../generated/prisma';
+import { AuthMethod, TokenType } from '../../../generated/prisma';
+
 import { UserService } from '../../user';
 import { SessionService } from '../../session';
 
@@ -21,13 +22,19 @@ export class RegisterService {
 
   public async sendCode(dto: EmailDto) {
     await this.emailConfirmationService.generateVerificationToken(dto.email);
-    await this.emailConfirmationService.sendRegisterToken(dto.email);
+    await this.emailConfirmationService.sendTokenByType(
+      dto.email,
+      TokenType.VERIFICATION,
+    );
 
     return { message: 'Verification code was sent to email.' };
   }
 
   public async verifyEmail(dto: VerifyDto) {
-    await this.emailConfirmationService.isVerificationTokenMatch(dto);
+    await this.emailConfirmationService.isVerificationTokenMatch(
+      dto,
+      TokenType.VERIFICATION,
+    );
 
     return { message: 'Email successfully verified.' };
   }
@@ -35,10 +42,13 @@ export class RegisterService {
   public async register(dto: RegisterDto) {
     const isLoginExists = await this.userService.findByLogin(dto.login);
     const isEmailVerified =
-      await this.emailConfirmationService.isVerificationTokenMatch({
-        email: dto.email,
-        token: dto.token,
-      });
+      await this.emailConfirmationService.isVerificationTokenMatch(
+        {
+          email: dto.email,
+          token: dto.token,
+        },
+        TokenType.VERIFICATION,
+      );
 
     if (isLoginExists) {
       throw new ConflictException('Login already exists');
@@ -48,7 +58,10 @@ export class RegisterService {
       throw new BadRequestException('Token is expired');
     }
 
-    await this.emailConfirmationService.deleteisVerificationToken(dto.email);
+    await this.emailConfirmationService.deleteVerificationToken(
+      dto.email,
+      TokenType.VERIFICATION,
+    );
 
     const newUser = await this.userService.create(
       dto.login,

@@ -11,13 +11,14 @@ datasource db {
 model User {
   id String @id @default(uuid())
 
-  email    String @unique
+  email String @unique
+
+  login    String @unique
   password String
 
-  login   String  @unique
-  picture String?
-
   role UserRole @default(REGULAR)
+
+  picture String?
 
   isTwoFactorEnable Boolean @default(false) @map("is_two_factor_enable")
 
