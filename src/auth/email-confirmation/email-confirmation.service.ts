@@ -12,6 +12,10 @@ import { VerifyDto } from '../dto';
 
 import { registerMessage, registerTitle } from './messages/register.message';
 import { UserService } from '../../user';
+import {
+  twoFactorMessage,
+  twoFactorTitle,
+} from './messages/two-factor.message';
 
 @Injectable()
 export class EmailConfirmationService {
@@ -21,7 +25,7 @@ export class EmailConfirmationService {
     private readonly userService: UserService,
   ) {}
 
-  public async sendRegisterVerificationToken(email: string): Promise<void> {
+  public async sendRegisterToken(email: string): Promise<void> {
     const isEmailExists = await this.userService.findByEmail(email);
 
     if (isEmailExists) {
@@ -39,6 +43,21 @@ export class EmailConfirmationService {
       email,
       registerTitle,
       registerMessage(verificationToken?.token),
+    );
+  }
+
+  public async sendTwoFactorToken(email: string): Promise<void> {
+    const twoFactorToken = await this.prismaService.token.findFirst({
+      where: {
+        email,
+        type: TokenType.VERIFICATION,
+      },
+    });
+
+    await this.mailService.sendToken(
+      email,
+      twoFactorTitle,
+      twoFactorMessage(twoFactorToken?.token),
     );
   }
 

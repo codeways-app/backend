@@ -3,6 +3,7 @@ import {
   IsEmail,
   IsNotEmpty,
   IsString,
+  Length,
   Matches,
   MinLength,
 } from 'class-validator';
@@ -50,5 +51,6 @@ export class RegisterDto {
   })
   @IsString({ message: 'Token must be a string' })
   @IsNotEmpty({ message: 'Token is required' })
+  @Length(6, 6, { message: 'Token must be 6 characters long' })
   token: string;
 }
