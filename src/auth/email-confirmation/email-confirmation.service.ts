@@ -4,20 +4,13 @@ import {
   Injectable,
 } from '@nestjs/common';
 
-import { MailService } from '../../libs/mail/mail.service';
-import { PrismaService } from '../../prisma/prisma.service';
 import { TokenType } from '../../../generated/prisma';
 
-import { VerifyDto } from '../dto';
-
-import { registerMessage, registerTitle } from './mails/register.mail';
-import { twoFactorMessage, twoFactorTitle } from './mails/two-factor.mail';
-import {
-  passwordResetTitle,
-  passwordResetMessage,
-} from './mails/password-reset.mail';
-
+import { MailService } from '../../libs/mail';
+import { PrismaService } from '../../prisma';
 import { UserService } from '../../user';
+
+import { emailForms } from './forms';
 
 @Injectable()
 export class EmailConfirmationService {
@@ -27,28 +20,8 @@ export class EmailConfirmationService {
     private readonly userService: UserService,
   ) {}
 
-  private forms: Record<
-    TokenType,
-    { title: string; message: (token: string) => string }
-  > = {
-    [TokenType.VERIFICATION]: {
-      title: registerTitle,
-      message: (token: string) => registerMessage(token),
-    },
-    [TokenType.TWO_FACTOR]: {
-      title: twoFactorTitle,
-      message: (token: string) => twoFactorMessage(token),
-    },
-    [TokenType.PASSWORD_RESET]: {
-      title: passwordResetTitle,
-      message: (token: string) => passwordResetMessage(token),
-    },
-  };
-
-  public async sendTokenByType(
-    email: string,
-    tokenType: TokenType,
-  ): Promise<void> {
+  // --- SEND TOKEN ---
+  public async sendToken(email: string, tokenType: TokenType): Promise<void> {
     if (tokenType === TokenType.VERIFICATION) {
       const isEmailExists = await this.userService.findByEmail(email);
 
@@ -68,7 +41,8 @@ export class EmailConfirmationService {
       throw new BadRequestException('Token not found');
     }
 
-    const form = this.forms[tokenType];
+    const form = emailForms[tokenType];
+
     await this.mailService.sendToken(
       email,
       form.title,
@@ -76,13 +50,14 @@ export class EmailConfirmationService {
     );
   }
 
-  public async generateVerificationToken(email: string) {
+  // --- GENERATE TOKEN ---
+  public async generateToken(email: string, tokenType: TokenType) {
     const token = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresIn = new Date(new Date().getTime() + 15 * 60 * 1000);
     const existingToken = await this.prismaService.token.findFirst({
       where: {
         email,
-        type: TokenType.VERIFICATION,
+        type: tokenType,
       },
     });
 
@@ -99,14 +74,15 @@ export class EmailConfirmationService {
         email,
         token,
         expiresIn,
-        type: TokenType.VERIFICATION,
+        type: tokenType,
       },
     });
 
     return verificationToken;
   }
 
-  public async deleteVerificationToken(email: string, tokenType: TokenType) {
+  // --- DELETE TOKEN ---
+  public async deleteToken(email: string, tokenType: TokenType) {
     await this.prismaService.token.deleteMany({
       where: {
         email,
@@ -115,22 +91,27 @@ export class EmailConfirmationService {
     });
   }
 
-  public async isVerificationTokenMatch(dto: VerifyDto, tokenType: TokenType) {
+  // --- VERIFY TOKEN ---
+  public async isTokenMatch(
+    email: string,
+    token: string,
+    tokenType: TokenType,
+  ) {
     const verificationToken = await this.prismaService.token.findFirst({
       where: {
-        email: dto.email,
+        email,
         type: tokenType,
       },
     });
 
-    if (dto.token !== verificationToken?.token) {
-      throw new BadRequestException('Verification token is wrong');
+    if (token !== verificationToken?.token) {
+      throw new BadRequestException('Verification token is invalid');
     }
     if (verificationToken.expiresIn < new Date()) {
-      await this.deleteVerificationToken(dto.email, tokenType);
+      await this.deleteToken(email, tokenType);
       throw new BadRequestException('Verification token has expired');
     }
 
-    return dto;
+    return true;
   }
 }

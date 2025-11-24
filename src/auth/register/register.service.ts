@@ -10,7 +10,8 @@ import { UserService } from '../../user';
 import { SessionService } from '../../session';
 
 import { EmailConfirmationService } from '../email-confirmation';
-import { EmailDto, RegisterDto, VerifyDto } from '../dto';
+
+import { EmailDto, RegisterDto, VerifyDto } from './dto';
 
 @Injectable()
 export class RegisterService {
@@ -20,9 +21,13 @@ export class RegisterService {
     private readonly sessionService: SessionService,
   ) {}
 
-  public async sendCode(dto: EmailDto) {
-    await this.emailConfirmationService.generateVerificationToken(dto.email);
-    await this.emailConfirmationService.sendTokenByType(
+  // --- SEND VERIFICATION TOKEN ---
+  public async sendVerificationToken(dto: EmailDto) {
+    await this.emailConfirmationService.generateToken(
+      dto.email,
+      TokenType.VERIFICATION,
+    );
+    await this.emailConfirmationService.sendToken(
       dto.email,
       TokenType.VERIFICATION,
     );
@@ -31,8 +36,9 @@ export class RegisterService {
   }
 
   public async verifyEmail(dto: VerifyDto) {
-    await this.emailConfirmationService.isVerificationTokenMatch(
-      dto,
+    await this.emailConfirmationService.isTokenMatch(
+      dto.email,
+      dto.token,
       TokenType.VERIFICATION,
     );
 
@@ -41,24 +47,22 @@ export class RegisterService {
 
   public async register(dto: RegisterDto) {
     const isLoginExists = await this.userService.findByLogin(dto.login);
-    const isEmailVerified =
-      await this.emailConfirmationService.isVerificationTokenMatch(
-        {
-          email: dto.email,
-          token: dto.token,
-        },
-        TokenType.VERIFICATION,
-      );
 
     if (isLoginExists) {
       throw new ConflictException('Login already exists');
     }
 
+    const isEmailVerified = await this.emailConfirmationService.isTokenMatch(
+      dto.email,
+      dto.token,
+      TokenType.VERIFICATION,
+    );
+
     if (!isEmailVerified) {
       throw new BadRequestException('Token is expired');
     }
 
-    await this.emailConfirmationService.deleteVerificationToken(
+    await this.emailConfirmationService.deleteToken(
       dto.email,
       TokenType.VERIFICATION,
     );
