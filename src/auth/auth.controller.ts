@@ -2,12 +2,10 @@ import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { ApiOperation, ApiBody, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Recaptcha } from '@nestlab/google-recaptcha';
 
-import { RegisterService } from './register';
-import { LoginService } from './login';
+import { RegisterService, EmailDto, RegisterDto, VerifyDto } from './register';
+import { LoginService, LoginDto, TwoFactorDto } from './login';
 
-import { EmailDto, VerifyDto, RegisterDto, LoginDto } from './dto';
 import { TokensResponse } from './types';
-import { TwoFactorDto } from './dto/two-factor.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -24,18 +22,18 @@ export class AuthController {
   @Recaptcha()
   @Post('register/send-code')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Step 1: Enter email & send verification code' })
+  @ApiOperation({ summary: 'Step 1: Enter email & send Verification Token' })
   @ApiBody({ type: EmailDto })
   @ApiResponse({
     status: 200,
-    description: 'Verification code was successfully sent to the email.',
+    description: 'Verification Token was successfully sent to the email.',
   })
   @ApiResponse({
     status: 400,
     description: 'Invalid email format.',
   })
-  public async sendCode(@Body() dto: EmailDto) {
-    return this.registerService.sendCode(dto);
+  public async sendVerificationToken(@Body() dto: EmailDto) {
+    return this.registerService.sendVerificationToken(dto);
   }
 
   // ────────────────────────────────────────────────
@@ -44,7 +42,7 @@ export class AuthController {
   @Recaptcha()
   @Post('register/verify-email')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Step 2: Verify email with received code' })
+  @ApiOperation({ summary: 'Step 2: Verify email with received Token' })
   @ApiBody({ type: VerifyDto })
   @ApiResponse({
     status: 200,
@@ -52,7 +50,7 @@ export class AuthController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Invalid verification code.',
+    description: 'Invalid verification Token.',
   })
   public async verifyEmail(@Body() dto: VerifyDto) {
     return this.registerService.verifyEmail(dto);
@@ -69,7 +67,7 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     type: TokensResponse,
-    description: 'Account successfully created and autheticated',
+    description: 'Account successfully registered',
   })
   @ApiResponse({
     status: 400,
@@ -87,7 +85,7 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     type: TokensResponse,
-    description: 'User successful autheticated',
+    description: 'User successful logined',
   })
   @ApiResponse({
     status: 401,
@@ -99,16 +97,16 @@ export class AuthController {
 
   @Post('login/two-factor')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Two factor login' })
+  @ApiOperation({ summary: 'Two-Factor Verification' })
   @ApiBody({ type: LoginDto })
   @ApiResponse({
     status: 200,
     type: TokensResponse,
-    description: 'User successful autheticated',
+    description: 'Two-Factor Token successful verified',
   })
   @ApiResponse({
     status: 401,
-    description: 'Invalid Two-Factor Token',
+    description: 'Invalid Verification Token',
   })
   public async twoFactor(@Body() dto: TwoFactorDto) {
     return this.loginService.twoFactor(dto);

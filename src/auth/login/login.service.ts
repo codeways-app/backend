@@ -3,16 +3,16 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-
-import { SessionService } from '../../session/session.service';
-import { UserService } from '../../user/user.service';
-import { EmailConfirmationService } from '../email-confirmation/email-confirmation.service';
-
-import { LoginDto } from '../dto';
-
 import { verify } from 'argon2';
-import { TwoFactorDto } from '../dto/two-factor.dto';
+
 import { TokenType } from '../../../generated/prisma';
+
+import { SessionService } from '../../session';
+import { UserService } from '../../user';
+
+import { EmailConfirmationService } from '../email-confirmation';
+
+import { LoginDto, TwoFactorDto } from './dto';
 
 @Injectable()
 export class LoginService {
@@ -40,13 +40,19 @@ export class LoginService {
     const isTwoFactorEnable = user.isTwoFactorEnable;
 
     if (isTwoFactorEnable) {
-      await this.emailConfirmationService.generateVerificationToken(user.email);
-      await this.emailConfirmationService.sendTokenByType(
+      await this.emailConfirmationService.generateToken(
         user.email,
         TokenType.TWO_FACTOR,
       );
 
-      return { message: 'Two-Factor Token successful sent' };
+      await this.emailConfirmationService.sendToken(
+        user.email,
+        TokenType.TWO_FACTOR,
+      );
+
+      return {
+        message: 'Two-Factor token sent',
+      };
     }
 
     return {
@@ -66,15 +72,13 @@ export class LoginService {
       throw new NotFoundException(`User ${dto.login} not found`);
     }
 
-    await this.emailConfirmationService.isVerificationTokenMatch(
-      {
-        email: user.email,
-        token: dto.token,
-      },
+    await this.emailConfirmationService.isTokenMatch(
+      user.email,
+      dto.token,
       TokenType.TWO_FACTOR,
     );
 
-    await this.emailConfirmationService.deleteVerificationToken(
+    await this.emailConfirmationService.deleteToken(
       user.email,
       TokenType.TWO_FACTOR,
     );

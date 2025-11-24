@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 
 import { getRecaptchaConfig } from '../configs/recaptcha';
 import { MailModule } from '../libs/mail';
+
 import { UserService } from '../user';
 import { SessionService } from '../session';
 

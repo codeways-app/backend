@@ -8,6 +8,16 @@ import {
   MinLength,
 } from 'class-validator';
 
+export class EmailDto {
+  @ApiProperty({
+    example: 'user12345@gmail.com',
+    description: 'User email',
+  })
+  @IsNotEmpty({ message: 'Email is required' })
+  @IsEmail({}, { message: 'Must be a valid email' })
+  email: string;
+}
+
 export class RegisterDto {
   @ApiProperty({
     example: 'user',
@@ -50,6 +60,24 @@ export class RegisterDto {
     description: 'Register token',
   })
   @IsString({ message: 'Token must be a string' })
+  @IsNotEmpty({ message: 'Token is required' })
+  @Length(6, 6, { message: 'Token must be 6 characters long' })
+  token: string;
+}
+
+export class VerifyDto {
+  @ApiProperty({
+    example: 'email',
+    description: 'User email',
+  })
+  @IsNotEmpty({ message: 'Email is required' })
+  @IsEmail({}, { message: 'Must be a valid email' })
+  email: string;
+
+  @ApiProperty({
+    example: 'token',
+    description: 'Email token',
+  })
   @IsNotEmpty({ message: 'Token is required' })
   @Length(6, 6, { message: 'Token must be 6 characters long' })
   token: string;

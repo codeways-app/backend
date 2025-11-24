@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 
-import { MailService } from '../../libs/mail/mail.service';
-import { UserService } from '../../user/user.service';
+import { MailService } from '../../libs/mail';
+import { UserService } from '../../user';
 
 import { EmailConfirmationService } from './email-confirmation.service';
 
