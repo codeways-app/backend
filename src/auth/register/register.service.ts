@@ -21,12 +21,18 @@ export class RegisterService {
     private readonly sessionService: SessionService,
   ) {}
 
-  // --- SEND VERIFICATION TOKEN ---
   public async sendVerificationToken(dto: EmailDto) {
+    const isEmailExists = await this.userService.findByEmail(dto.email);
+
+    if (isEmailExists) {
+      throw new ConflictException('Email already exists');
+    }
+
     await this.emailConfirmationService.generateToken(
       dto.email,
       TokenType.VERIFICATION,
     );
+
     await this.emailConfirmationService.sendToken(
       dto.email,
       TokenType.VERIFICATION,
