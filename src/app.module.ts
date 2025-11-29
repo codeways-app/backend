@@ -10,6 +10,7 @@ import { MailModule } from './libs/mail/mail.module';
 import { EmailConfirmationModule } from './auth/email-confirmation/email-confirmation.module';
 import { RegisterModule } from './auth/register/register.module';
 import { LoginModule } from './auth/login/login.module';
+import { ProviderModule } from './auth/provider/provider.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { LoginModule } from './auth/login/login.module';
     EmailConfirmationModule,
     RegisterModule,
     LoginModule,
+    ProviderModule,
   ],
 })
 export class AppModule {}
