@@ -3,14 +3,10 @@ import {
   ConflictException,
   Injectable,
 } from '@nestjs/common';
-
 import { AuthMethod, TokenType } from '../../../generated/prisma';
-
 import { UserService } from '../../user';
 import { SessionService } from '../../session';
-
 import { EmailConfirmationService } from '../email-confirmation';
-
 import { EmailDto, RegisterDto, VerifyDto } from './dto';
 
 @Injectable()

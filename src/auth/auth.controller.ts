@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/require-await */
 import {
   BadRequestException,
   Body,
@@ -36,9 +37,8 @@ export class AuthController {
     private readonly providerService: ProviderService,
   ) {}
 
-  // ─── Registration routes ───
   // ────────────────────────────────────────────────
-  // STEP 1 — Send verification code to email
+  // Registration — Step 1: Send verification code
   // ────────────────────────────────────────────────
   @Recaptcha()
   @Post('register/send-code')
@@ -62,7 +62,7 @@ export class AuthController {
   }
 
   // ────────────────────────────────────────────────
-  // STEP 2 — Verify email with code
+  // Registration — Step 2: Verify email with code
   // ────────────────────────────────────────────────
   @Recaptcha()
   @Post('register/verify-email')
@@ -82,7 +82,7 @@ export class AuthController {
   }
 
   // ────────────────────────────────────────────────
-  // STEP 3 — Create account (login, password)
+  // Registration — Step 3: Create account (login/password)
   // ────────────────────────────────────────────────
   @Recaptcha()
   @Post('register')
@@ -106,7 +106,9 @@ export class AuthController {
     return this.registerService.register(dto);
   }
 
-  // ─── Login route ───
+  // ────────────────────────────────────────────────
+  // Login
+  // ────────────────────────────────────────────────
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'User login' })
@@ -124,41 +126,9 @@ export class AuthController {
     return this.loginService.login(dto);
   }
 
-  @Get('/oauth/callback/:provider')
-  @UseGuards(AuthProviderGuard)
-  public async callback(
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-    @Query('code') code: string,
-    @Param('provider') provider: string,
-  ) {
-    if (!code) {
-      throw new BadRequestException('Authorization code is missing');
-    }
-
-    await this.authService.extractProfileFromCode(req, provider, code);
-
-    return res.redirect(
-      `${this.configService.getOrThrow('ALLOWED_ORIGIN')}/dashboard`,
-    );
-  }
-
-  @UseGuards(AuthProviderGuard)
-  @Get('/oauth/connect/:provider')
-  // eslint-disable-next-line @typescript-eslint/require-await
-  public async connect(@Param('provider') provider: string) {
-    const providerInstance = this.providerService.findByService(provider);
-
-    if (!providerInstance) {
-      throw new BadRequestException(`Provider "${provider}" not found`);
-    }
-
-    return {
-      url: providerInstance.getAuthUrl(),
-    };
-  }
-
-  // ─── Two factor route ───
+  // ────────────────────────────────────────────────
+  // Two-Factor Login
+  // ────────────────────────────────────────────────
   @Post('login/two-factor')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Two-Factor Verification' })
@@ -174,5 +144,44 @@ export class AuthController {
   })
   public async twoFactor(@Body() dto: TwoFactorDto) {
     return this.loginService.twoFactor(dto);
+  }
+
+  // ────────────────────────────────────────────────
+  // OAuth — Connect provider
+  // ────────────────────────────────────────────────
+  @UseGuards(AuthProviderGuard)
+  @Get('oauth/connect/:provider')
+  public async connect(@Param('provider') provider: string) {
+    const providerInstance = this.providerService.findByService(provider);
+
+    if (!providerInstance) {
+      throw new BadRequestException(`Provider "${provider}" not found`);
+    }
+
+    return {
+      url: providerInstance.getAuthUrl(),
+    };
+  }
+
+  // ────────────────────────────────────────────────
+  // OAuth — Provider callback
+  // ────────────────────────────────────────────────
+  @UseGuards(AuthProviderGuard)
+  @Get('oauth/callback/:provider')
+  public async callback(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+    @Query('code') code: string,
+    @Param('provider') provider: string,
+  ) {
+    if (!code) {
+      throw new BadRequestException('Authorization code is missing');
+    }
+
+    await this.authService.extractProfileFromCode(provider, code);
+
+    return res.redirect(
+      `${this.configService.getOrThrow('ALLOWED_ORIGIN')}/dashboard`,
+    );
   }
 }
