@@ -74,6 +74,7 @@ export class RegisterService {
       dto.email,
       dto.password,
       '',
+      '',
       AuthMethod.CREDENTIALS,
     );
 
