@@ -50,6 +50,7 @@ export class UserService {
     login: string,
     email: string,
     password: string,
+    name: string,
     picture: string,
     method: AuthMethod,
   ) {
@@ -58,6 +59,7 @@ export class UserService {
         login,
         email,
         password: password ? await hash(password) : '',
+        name,
         picture,
         method,
       },

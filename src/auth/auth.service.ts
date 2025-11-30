@@ -42,9 +42,10 @@ export class AuthService {
     }
 
     user = await this.userService.create(
-      profile.name,
+      '',
       profile.email,
       '',
+      profile.name,
       profile.picture,
       AuthMethod[profile.provider.toUpperCase()],
     );
