@@ -1,17 +1,25 @@
+// import { ConfigService } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
 import { BaseOAuthService } from './base-oauth.service';
 import { TypeBaseProviderOptions, TypeUserInfo } from './types';
 
 export class YandexProvider extends BaseOAuthService {
-  public constructor(options: TypeBaseProviderOptions) {
-    super({
-      name: 'yandex',
-      authorize_url: 'https://oauth.yandex.com/authorize',
-      access_url: 'https://oauth.yandex.com/token',
-      profile_url: 'https://login.yandex.ru/info?format=json',
-      scopes: options.scopes,
-      cliend_id: options.cliend_id,
-      client_secret: options.client_secret,
-    });
+  public constructor(
+    options: TypeBaseProviderOptions,
+    configService: ConfigService,
+  ) {
+    super(
+      {
+        name: 'yandex',
+        authorize_url: 'https://oauth.yandex.com/authorize',
+        access_url: 'https://oauth.yandex.com/token',
+        profile_url: 'https://login.yandex.ru/info?format=json',
+        scopes: options.scopes,
+        client_id: options.client_id,
+        client_secret: options.client_secret,
+      },
+      configService,
+    );
   }
 
   public async extractUserInfo(data: YandexProfile): Promise<TypeUserInfo> {

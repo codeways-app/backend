@@ -1,17 +1,25 @@
+// import { ConfigService } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
 import { BaseOAuthService } from './base-oauth.service';
 import { TypeBaseProviderOptions, TypeUserInfo } from './types';
 
 export class GoogleProvider extends BaseOAuthService {
-  public constructor(options: TypeBaseProviderOptions) {
-    super({
-      name: 'google',
-      authorize_url: 'https://accounts.google.com/o/oauth2/v2/auth',
-      access_url: 'https://oauth2.googleapis.com/token',
-      profile_url: 'https://www.googleapis.com/oauth2/v3/userinfo',
-      scopes: options.scopes,
-      cliend_id: options.cliend_id,
-      client_secret: options.client_secret,
-    });
+  public constructor(
+    options: TypeBaseProviderOptions,
+    configService: ConfigService,
+  ) {
+    super(
+      {
+        name: 'google',
+        authorize_url: 'https://accounts.google.com/o/oauth2/v2/auth',
+        access_url: 'https://oauth2.googleapis.com/token',
+        profile_url: 'https://www.googleapis.com/oauth2/v3/userinfo',
+        scopes: options.scopes,
+        client_id: options.client_id,
+        client_secret: options.client_secret,
+      },
+      configService,
+    );
   }
 
   public async extractUserInfo(data: GoogleProfile): Promise<TypeUserInfo> {

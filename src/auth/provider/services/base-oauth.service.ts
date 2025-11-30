@@ -8,12 +8,16 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import type { TypeBaseProviderOptions, TypeUserInfo } from './types';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class BaseOAuthService {
   private BASE_URL: string;
 
-  public constructor(private readonly options: TypeBaseProviderOptions) {}
+  public constructor(
+    private readonly options: TypeBaseProviderOptions,
+    private readonly configService: ConfigService,
+  ) {}
 
   protected async extractUserInfo(data: any): Promise<TypeUserInfo> {
     return {
@@ -25,7 +29,7 @@ export class BaseOAuthService {
   public getAuthUrl() {
     const query = new URLSearchParams({
       response_type: 'code',
-      client_id: this.options.cliend_id,
+      client_id: this.options.client_id,
       redirect_uri: this.getRedirectUrl(),
       scope: (this.options.scopes ?? []).join(' '),
       access_type: 'offline',
@@ -36,13 +40,13 @@ export class BaseOAuthService {
   }
 
   public async findUserByCode(code: string): Promise<TypeUserInfo> {
-    const client_id = this.options.cliend_id;
+    const client_id = this.options.client_id;
     const client_secret = this.options.client_secret;
 
     const tokenQuery = new URLSearchParams({
-      code,
       client_id,
       client_secret,
+      code,
       redirect_uri: this.getRedirectUrl(),
       grant_type: 'authorization_code',
     });
@@ -60,14 +64,15 @@ export class BaseOAuthService {
       body: tokenQuery,
     });
 
-    const tokenResponse = await tokenRequest.json();
-
     if (!tokenRequest.ok) {
       throw new BadRequestException(
         `Failed to get user with ${this.options.profile_url}`,
       );
     }
-    if (!tokenResponse.access_token) {
+
+    const tokens = await tokenRequest.json();
+
+    if (!tokens.access_token) {
       throw new BadRequestException(
         `Access token for ${this.options.profile_url} not found`,
       );
@@ -79,7 +84,7 @@ export class BaseOAuthService {
 
     const userRequest = await fetch(this.options.profile_url, {
       headers: {
-        Authorization: `Bearer ${tokenResponse.access_token}`,
+        Authorization: `Bearer ${tokens.access_token}`,
       },
     });
     if (!userRequest.ok) {
@@ -92,15 +97,17 @@ export class BaseOAuthService {
 
     return {
       ...userData,
-      access_token: tokenResponse.access_token,
-      refresh_token: tokenResponse.refresh_token,
-      expires_at: tokenResponse.expires_at || tokenResponse.expires_in,
+      access_token: tokens.access_token,
+      refresh_token: tokens.refresh_token,
+      expires_at: tokens.expires_at || tokens.expires_in,
       provider: this.options.name ?? '',
     };
   }
 
   public getRedirectUrl(): string {
-    return `${this.BASE_URL}/auth/oauth/callback/${this.options.name}`;
+    const APP_URL = this.configService.getOrThrow('APPLICATION_URL');
+
+    return `${APP_URL}/api/auth/oauth/callback/${this.options.name}`;
   }
 
   set baseUrl(value: string) {

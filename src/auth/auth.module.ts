@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { GoogleRecaptchaModule } from '@nestlab/google-recaptcha';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { GoogleRecaptchaModule } from '@nestlab/google-recaptcha';
 
 import { ProviderModule } from './provider';
 import { MailModule } from '../libs/mail';

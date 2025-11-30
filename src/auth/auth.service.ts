@@ -6,20 +6,18 @@ import { AuthMethod } from '../../generated/prisma';
 import { PrismaService } from '../prisma';
 import { UserService } from '../user';
 
-import { ProviderService } from './provider';
+import { ProviderService } from './provider/provider.service';
+import { Injectable } from '@nestjs/common';
 
+@Injectable()
 export class AuthService {
-  public constructor(
+  constructor(
     private readonly prismaService: PrismaService,
     private readonly userService: UserService,
     private readonly providerService: ProviderService,
   ) {}
 
-  public async extractProfileFromCode(
-    req: Request,
-    provider: string,
-    code: string,
-  ) {
+  public async extractProfileFromCode(provider: string, code: string) {
     const providerInstance = this.providerService.findByService(provider);
 
     if (!providerInstance) {
