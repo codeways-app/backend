@@ -9,7 +9,6 @@ import {
   Param,
   Post,
   Query,
-  Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -19,12 +18,14 @@ import { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
 
 import { AuthProviderGuard } from './guards/provider.guard';
+import { ConnectResponseDto } from './provider/dto';
 
 import { AuthService } from './auth.service';
 import { RegisterService, EmailDto, RegisterDto, VerifyDto } from './register';
 import { LoginService, LoginDto, TwoFactorDto } from './login';
 import { ProviderService } from './provider';
 import { TokensResponse } from './types';
+import { SessionService } from '../session';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -35,6 +36,7 @@ export class AuthController {
     private readonly registerService: RegisterService,
     private readonly loginService: LoginService,
     private readonly providerService: ProviderService,
+    private readonly sessionService: SessionService,
   ) {}
 
   // ────────────────────────────────────────────────
@@ -151,6 +153,11 @@ export class AuthController {
   // ────────────────────────────────────────────────
   @UseGuards(AuthProviderGuard)
   @Get('oauth/connect/:provider')
+  @ApiResponse({
+    status: 200,
+    type: ConnectResponseDto,
+    description: 'User successful logined',
+  })
   public async connect(@Param('provider') provider: string) {
     const providerInstance = this.providerService.findByService(provider);
 
@@ -168,8 +175,12 @@ export class AuthController {
   // ────────────────────────────────────────────────
   @UseGuards(AuthProviderGuard)
   @Get('oauth/callback/:provider')
+  @ApiResponse({
+    status: 200,
+    type: TokensResponse,
+    description: 'User successful logined',
+  })
   public async callback(
-    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
     @Query('code') code: string,
     @Param('provider') provider: string,
@@ -178,10 +189,17 @@ export class AuthController {
       throw new BadRequestException('Authorization code is missing');
     }
 
-    await this.authService.extractProfileFromCode(provider, code);
+    const user = await this.authService.extractProfileFromCode(provider, code);
+
+    const accessToken = await this.sessionService.encrypt({
+      sub: user.id,
+      login: user.login,
+      email: user.email,
+      role: user.role,
+    });
 
     return res.redirect(
-      `${this.configService.getOrThrow('ALLOWED_ORIGIN')}/dashboard`,
+      `${this.configService.getOrThrow('ALLOWED_ORIGIN')}/oauth?accessToken=${accessToken}`,
     );
   }
 }
