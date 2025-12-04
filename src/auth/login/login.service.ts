@@ -7,12 +7,12 @@ import { verify } from 'argon2';
 
 import { TokenType } from '../../../generated/prisma';
 
-import { LoginDto, TwoFactorDto } from '../shared/dto';
-
 import { SessionService } from '../../session';
 import { UserService } from '../../user';
 
 import { EmailConfirmationService } from '../email-confirmation';
+
+import { LoginDto, TwoFactorDto } from './dto';
 
 @Injectable()
 export class LoginService {

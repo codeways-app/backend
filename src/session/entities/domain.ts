@@ -1,6 +1,6 @@
 export type SessionEntity = {
   sub: string;
-  login: string | null;
+  login: string;
   email: string;
   role: string;
 };
