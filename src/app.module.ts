@@ -11,6 +11,7 @@ import { EmailConfirmationModule } from './auth/email-confirmation/email-confirm
 import { RegisterModule } from './auth/register/register.module';
 import { LoginModule } from './auth/login/login.module';
 import { ProviderModule } from './auth/provider/provider.module';
+import { RecoverModule } from './auth/recover/recover.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { ProviderModule } from './auth/provider/provider.module';
     RegisterModule,
     LoginModule,
     ProviderModule,
+    RecoverModule,
   ],
 })
 export class AppModule {}

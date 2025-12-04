@@ -4,10 +4,13 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { AuthMethod, TokenType } from '../../../generated/prisma';
+
 import { UserService } from '../../user';
 import { SessionService } from '../../session';
+
+import { EmailDto, VerifyDto, RegisterDto } from '../shared/dto';
+
 import { EmailConfirmationService } from '../email-confirmation';
-import { EmailDto, RegisterDto, VerifyDto } from './dto';
 
 @Injectable()
 export class RegisterService {

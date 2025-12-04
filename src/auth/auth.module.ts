@@ -10,12 +10,13 @@ import { getRecaptchaConfig } from '../configs/recaptcha';
 
 import { UserService } from '../user';
 import { SessionService } from '../session';
-import { AuthService } from './auth.service';
-import { RegisterService } from './register';
-import { LoginService } from './login';
-import { EmailConfirmationService } from './email-confirmation';
 
 import { AuthController } from './auth.controller';
+import { AuthService } from './auth.service';
+import { EmailConfirmationService } from './email-confirmation';
+import { RegisterService } from './register';
+import { LoginService } from './login';
+import { RecoverService } from './recover';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { AuthController } from './auth.controller';
     UserService,
     SessionService,
     EmailConfirmationService,
+    RecoverService,
   ],
 })
 export class AuthModule {}
