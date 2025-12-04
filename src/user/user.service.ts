@@ -14,6 +14,9 @@ export class UserService {
       where: {
         id,
       },
+      include: {
+        accounts: true,
+      },
     });
 
     if (!user) {
@@ -23,7 +26,7 @@ export class UserService {
   }
 
   public async findByLogin(login: string) {
-    const user = await this.prismaService.user.findFirst({
+    const user = await this.prismaService.user.findUnique({
       where: {
         login,
       },
@@ -35,6 +38,9 @@ export class UserService {
     const user = await this.prismaService.user.findUnique({
       where: {
         email,
+      },
+      include: {
+        accounts: true,
       },
     });
     return user;
@@ -61,17 +67,6 @@ export class UserService {
         accounts: true,
       },
     });
-    return user;
-  }
-
-  public async resetPassword(email: string, newPassword: string) {
-    const user = await this.prismaService.user.update({
-      where: { email },
-      data: {
-        password: await hash(newPassword),
-      },
-    });
-
     return user;
   }
 }
