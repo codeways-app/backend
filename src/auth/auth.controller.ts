@@ -15,17 +15,26 @@ import {
 import { ApiOperation, ApiBody, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Recaptcha } from '@nestlab/google-recaptcha';
 import { ConfigService } from '@nestjs/config';
-import type { Request, Response } from 'express';
+import type { Response } from 'express';
 
-import { AuthProviderGuard } from './guards/provider.guard';
+import { AuthProviderGuard } from './shared/guards/provider.guard';
+import {
+  EmailDto,
+  VerifyDto,
+  RegisterDto,
+  LoginDto,
+  RecoverDto,
+} from './shared/dto';
+import { TwoFactorDto } from './shared/dto/two-factor.dto';
+import { TokensResponse } from './shared/types';
 import { ConnectResponseDto } from './provider/dto';
 
-import { AuthService } from './auth.service';
-import { RegisterService, EmailDto, RegisterDto, VerifyDto } from './register';
-import { LoginService, LoginDto, TwoFactorDto } from './login';
-import { ProviderService } from './provider';
-import { TokensResponse } from './types';
 import { SessionService } from '../session';
+import { AuthService } from './auth.service';
+import { ProviderService } from './provider';
+import { RecoverService } from './recover';
+import { LoginService } from './login';
+import { RegisterService } from './register';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -37,6 +46,7 @@ export class AuthController {
     private readonly loginService: LoginService,
     private readonly providerService: ProviderService,
     private readonly sessionService: SessionService,
+    private readonly recoverService: RecoverService,
   ) {}
 
   // ────────────────────────────────────────────────
@@ -52,14 +62,10 @@ export class AuthController {
     description: 'Verification Token was successfully sent to the email.',
   })
   @ApiResponse({
-    status: 400,
-    description: 'Invalid email format.',
-  })
-  @ApiResponse({
     status: 409,
     description: 'Email already exists',
   })
-  public async sendRegisterVerificationToken(@Body() dto: EmailDto) {
+  public async sendVerificationToken(@Body() dto: EmailDto) {
     return this.registerService.sendVerificationToken(dto);
   }
 
@@ -109,7 +115,7 @@ export class AuthController {
   }
 
   // ────────────────────────────────────────────────
-  // Login
+  // Login — Step 1: Enter account credentials
   // ────────────────────────────────────────────────
   @Post('login')
   @HttpCode(HttpStatus.OK)
@@ -129,7 +135,7 @@ export class AuthController {
   }
 
   // ────────────────────────────────────────────────
-  // Two-Factor Login
+  // Login — Step 2: Two-Factor Verification
   // ────────────────────────────────────────────────
   @Post('login/two-factor')
   @HttpCode(HttpStatus.OK)
@@ -149,7 +155,7 @@ export class AuthController {
   }
 
   // ────────────────────────────────────────────────
-  // OAuth — Connect provider
+  // OAuth — Step 1: Connect provider
   // ────────────────────────────────────────────────
   @UseGuards(AuthProviderGuard)
   @Get('oauth/connect/:provider')
@@ -171,7 +177,7 @@ export class AuthController {
   }
 
   // ────────────────────────────────────────────────
-  // OAuth — Provider callback
+  // OAuth — Step 2: Provider callback
   // ────────────────────────────────────────────────
   @UseGuards(AuthProviderGuard)
   @Get('oauth/callback/:provider')
@@ -201,5 +207,70 @@ export class AuthController {
     return res.redirect(
       `${this.configService.getOrThrow('ALLOWED_ORIGIN')}/oauth?accessToken=${accessToken}`,
     );
+  }
+
+  // ────────────────────────────────────────────────
+  // Recover — Step 1: Send recover  code
+  // ────────────────────────────────────────────────
+  @Recaptcha()
+  @Post('recover/send-code')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Step 1: Enter email & send recover Token' })
+  @ApiBody({ type: EmailDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Recover Token was successfully sent to the email.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Email does not exist',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'This account uses social login',
+  })
+  public async sendRecoverToken(@Body() dto: EmailDto) {
+    return this.recoverService.sendRecoverToken(dto);
+  }
+
+  // ────────────────────────────────────────────────
+  // Recover — Step 2: Verify recover with code
+  // ────────────────────────────────────────────────
+  @Recaptcha()
+  @Post('recover/verify-recover')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Step 2: Verify recover with received Token' })
+  @ApiBody({ type: VerifyDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Recover successfully verified.',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid verification Token.',
+  })
+  public async verifyRecover(@Body() dto: VerifyDto) {
+    return this.recoverService.verifyRecover(dto);
+  }
+
+  // ────────────────────────────────────────────────
+  // Recover — Step 3: New Password
+  // ────────────────────────────────────────────────
+  @Recaptcha()
+  @Post('recover/new-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Step 3: Complete recover and set new password' })
+  @ApiBody({ type: RecoverDto })
+  @ApiResponse({
+    status: 200,
+    type: TokensResponse,
+    description: 'Password successfully reseted',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Validation error',
+  })
+  public async recover(@Body() dto: RecoverDto) {
+    return this.recoverService.recover(dto);
   }
 }
