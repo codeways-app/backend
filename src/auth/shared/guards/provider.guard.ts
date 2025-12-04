@@ -7,8 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Request } from 'express';
-
-import { ProviderService } from '../provider/provider.service';
+import { ProviderService } from '../../provider';
 
 @Injectable()
 export class AuthProviderGuard implements CanActivate {
