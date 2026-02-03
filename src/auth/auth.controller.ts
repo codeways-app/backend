@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/require-await */
 import {
   BadRequestException,
   Body,
@@ -48,6 +47,19 @@ export class AuthController {
     private readonly sessionService: SessionService,
     private readonly recoverService: RecoverService,
   ) {}
+
+  private setSessionCookie(res: Response, token?: string) {
+    if (!token) {
+      return;
+    }
+    res.cookie('session', token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+  }
 
   // ────────────────────────────────────────────────
   // Registration — Step 1: Send verification code
@@ -130,8 +142,16 @@ export class AuthController {
     status: 401,
     description: 'Invalid login or password',
   })
-  public async login(@Body() dto: LoginDto) {
-    return this.loginService.login(dto);
+  public async login(
+    @Body() dto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.loginService.login(dto);
+
+    if ('accessToken' in result) {
+      this.setSessionCookie(res, result.accessToken);
+    }
+    return result;
   }
 
   // ────────────────────────────────────────────────
@@ -150,8 +170,16 @@ export class AuthController {
     status: 401,
     description: 'Invalid Verification Token',
   })
-  public async twoFactor(@Body() dto: TwoFactorDto) {
-    return this.loginService.twoFactor(dto);
+  public async twoFactor(
+    @Body() dto: TwoFactorDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.loginService.twoFactor(dto);
+
+    if ('accessToken' in result) {
+      this.setSessionCookie(res, result.accessToken);
+    }
+    return result;
   }
 
   // ────────────────────────────────────────────────
@@ -203,6 +231,8 @@ export class AuthController {
       email: user.email,
       role: user.role,
     });
+
+    this.setSessionCookie(res, accessToken);
 
     return res.redirect(
       `${this.configService.getOrThrow('ALLOWED_ORIGIN')}/oauth?accessToken=${accessToken}`,
