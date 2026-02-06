@@ -10,8 +10,8 @@ To start the project, follow these steps:
 1. Clone the repository:
 
    ```sh
-   git clone https://github.com/spasontis/project-name.git
-   cd project-name
+   git clone https://github.com/codeways-app/backend.git
+   cd backend
    ```
 
 2. Install the dependencies:
