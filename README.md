@@ -20,7 +20,13 @@ To start the project, follow these steps:
    npm install
    ```
 
-3. Start the development server:
+3. Setup database:
+
+   ```sh
+   npm run db:push
+   ```
+
+4. Start the development server:
 
    ```sh
    npm run start
