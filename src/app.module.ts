@@ -12,6 +12,7 @@ import { RegisterModule } from './auth/register/register.module';
 import { LoginModule } from './auth/login/login.module';
 import { ProviderModule } from './auth/provider/provider.module';
 import { RecoverModule } from './auth/recover/recover.module';
+import { EventsModule } from './chat/events.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { RecoverModule } from './auth/recover/recover.module';
     LoginModule,
     ProviderModule,
     RecoverModule,
+    EventsModule,
   ],
 })
 export class AppModule {}
