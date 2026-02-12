@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { jwtVerify, SignJWT } from 'jose';
 import { SessionEntity } from './entities/domain';
-import { left, right } from '../libs/common/utils/either';
+import { left, right, Either } from '../libs/common/utils/either';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
@@ -21,12 +21,14 @@ export class SessionService {
       .sign(this.encodedKey);
   }
 
-  public async decrypt(session: string | undefined = '') {
+  public async decrypt(
+    session: string | undefined = '',
+  ): Promise<Either<Error, SessionEntity>> {
     try {
       const { payload } = await jwtVerify(session, this.encodedKey, {
         algorithms: ['HS256'],
       });
-      return right(payload);
+      return right(payload as SessionEntity);
     } catch (error) {
       return left(error);
     }
