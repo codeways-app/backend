@@ -6,18 +6,18 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { UseGuards } from '@nestjs/common';
-import { WsJwtGuard } from './ws-jwt/ws-jwt.guard';
-import { SocketAuthMiddleware } from './ws-jwt/ws.mw';
+import { WsJwtGuard } from './shared/guards/ws-jwt.guard';
+import { SocketAuthMiddleware } from './shared/guards/ws.mw';
 import { SessionService } from '../session/session.service';
-import type { AuthenticatedSocket } from './types/ws.types';
-import { EventsService } from './events.service';
+import type { AuthenticatedSocket } from './shared/types/ws.types';
+import { ChatService } from './chats.service';
 
 @UseGuards(WsJwtGuard)
 @WebSocketGateway(3001, {})
 export class EventsGateway {
   constructor(
     private readonly sessionService: SessionService,
-    private readonly eventsService: EventsService,
+    private readonly chatService: ChatService,
   ) {}
 
   @WebSocketServer() server: Server;
@@ -45,7 +45,7 @@ export class EventsGateway {
   @SubscribeMessage('joinRoom')
   async handleJoinRoom(client: AuthenticatedSocket, room: string) {
     console.log(room);
-    const member = await this.eventsService.findMember(
+    const member = await this.chatService.findMember(
       room,
       client.data.user.sub,
     );
@@ -55,6 +55,8 @@ export class EventsGateway {
       throw new WsException('Access denied: not a chat member');
     }
 
+    await client.join(room);
+
     console.log(
       'User joined room:',
       '\n user:',
@@ -62,6 +64,7 @@ export class EventsGateway {
       '\n room:',
       room,
     );
-    await client.join(room);
+
+    client.to(room).emit('broadcasting', room);
   }
 }

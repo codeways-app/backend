@@ -106,14 +106,15 @@ model Message {
   sender User @relation(fields: [senderId], references: [id])
   senderId String @map("sender_id")
 
-  content ContentType @default(TEXT)
+  content String?           
+
   type  ContentType @default(TEXT)
   replyToId String? @map("reply_to_id")
 
   statuses MessageStatus[]
 
   createdAt DateTime @default(now()) @map("created_at")
-  editedAt  DateTime @updatedAt @map("edited_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("messages")
 }

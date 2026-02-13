@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import type { AuthenticatedSocket } from '../types/ws.types';
 
-import { SessionService } from '../../session/session.service';
+import { SessionService } from '../../../session/session.service';
 
 @Injectable()
 export class WsJwtGuard {
