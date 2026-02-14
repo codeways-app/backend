@@ -6,11 +6,13 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as YAML from 'yaml';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import type { Request, Response } from 'express';
+import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-
   const config = app.get(ConfigService);
+
+  app.use(cookieParser());
 
   app.setGlobalPrefix('api');
 

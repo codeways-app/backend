@@ -29,8 +29,8 @@ export class SessionService {
         algorithms: ['HS256'],
       });
       return right(payload as SessionEntity);
-    } catch (error) {
-      return left(error);
+    } catch (error: unknown) {
+      return left(error instanceof Error ? error : new Error(String(error)));
     }
   }
 }
