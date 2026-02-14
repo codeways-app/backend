@@ -4,17 +4,10 @@ import {
   ExecutionContext,
   UnauthorizedException,
 } from '@nestjs/common';
-import { UserService } from '../../user';
-import { SessionService } from '../../session';
-import { User } from '../../../generated/prisma';
+import { UserService } from '../../../user';
+import { SessionService } from '../../../session';
 
-export interface RequestWithCookies extends Request {
-  cookies: Record<string, string>;
-}
-
-export interface RequestWithUser extends RequestWithCookies {
-  user: User;
-}
+import { RequestWithCookies, RequestWithUser } from '../types';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -26,7 +19,7 @@ export class AuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<RequestWithCookies>();
 
-    const accessToken = request.cookies?.session;
+    const accessToken = request.cookies.session;
 
     if (!accessToken) {
       console.log('No access token');
