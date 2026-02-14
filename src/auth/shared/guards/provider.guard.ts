@@ -1,22 +1,21 @@
-/* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
-
 import {
   CanActivate,
   ExecutionContext,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Request } from 'express';
+
 import { ProviderService } from '../../provider';
+import { Request } from 'express';
 
 @Injectable()
 export class AuthProviderGuard implements CanActivate {
   public constructor(private readonly providerService: ProviderService) {}
 
   public canActivate(context: ExecutionContext) {
-    const request = context.switchToHttp().getRequest() as Request;
+    const request = context.switchToHttp().getRequest<Request>();
 
-    const provider = request.params.provider;
+    const provider = request.params.provider as string;
 
     const providerInstance = this.providerService.findByService(provider);
 

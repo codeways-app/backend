@@ -13,7 +13,7 @@ import { SessionService } from '../session';
 
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { AuthGuard } from './guards/auth.guard';
+import { AuthGuard } from './shared/guards/auth.guard';
 import { EmailConfirmationService } from './email-confirmation';
 import { RegisterService } from './register';
 import { LoginService } from './login';

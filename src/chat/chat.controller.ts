@@ -10,8 +10,8 @@ import {
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ChatService } from './chats.service';
 import { ChatListResponseDto } from './shared/dto/chat-list.dto';
-import { AuthGuard } from '../auth/guards/auth.guard';
-import type { RequestWithUser } from '../auth/guards/auth.guard';
+import { AuthGuard } from '../auth/shared/guards/auth.guard';
+import type { RequestWithUser } from '../auth/shared/types';
 
 @ApiTags('Chats')
 @UseGuards(AuthGuard)
