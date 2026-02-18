@@ -8,13 +8,13 @@ import { MailModule } from '../libs/mail';
 import { getProvidersConfig } from '../configs/providers';
 import { getRecaptchaConfig } from '../configs/recaptcha';
 
+import { AuthController } from './auth.controller';
+import { AuthGuard } from './shared/guards/auth.guard';
+
 import { UserService } from '../user';
 import { SessionService } from '../session';
-
-import { AuthController } from './auth.controller';
-import { AuthService } from './auth.service';
-import { AuthGuard } from './shared/guards/auth.guard';
 import { EmailConfirmationService } from './email-confirmation';
+import { OAuthService } from './oauth';
 import { RegisterService } from './register';
 import { LoginService } from './login';
 import { RecoverService } from './recover';
@@ -35,7 +35,7 @@ import { RecoverService } from './recover';
   ],
   controllers: [AuthController],
   providers: [
-    AuthService,
+    OAuthService,
     RegisterService,
     LoginService,
     UserService,

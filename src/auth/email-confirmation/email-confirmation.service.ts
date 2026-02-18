@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
 } from '@nestjs/common';
 
 import { TokenType } from '../../../generated/prisma';
@@ -14,6 +15,8 @@ import { emailForms } from './forms';
 
 @Injectable()
 export class EmailConfirmationService {
+  private readonly logger = new Logger(EmailConfirmationService.name);
+
   public constructor(
     private readonly mailService: MailService,
     private readonly prismaService: PrismaService,
@@ -26,6 +29,7 @@ export class EmailConfirmationService {
       const isEmailExists = await this.userService.findByEmail(email);
 
       if (isEmailExists) {
+        this.logger.error('Email already exists');
         throw new ConflictException('Email already exists');
       }
     }
@@ -38,6 +42,7 @@ export class EmailConfirmationService {
     });
 
     if (!tokenRecord) {
+      this.logger.error('Token not found');
       throw new BadRequestException('Token not found');
     }
 
@@ -105,10 +110,12 @@ export class EmailConfirmationService {
     });
 
     if (token !== verificationToken?.token) {
+      this.logger.error('Verification token is invalid');
       throw new BadRequestException('Verification token is invalid');
     }
     if (verificationToken.expiresIn < new Date()) {
       await this.deleteToken(email, tokenType);
+      this.logger.error('Verification token has expired');
       throw new BadRequestException('Verification token has expired');
     }
 

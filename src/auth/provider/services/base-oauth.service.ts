@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
+
 import {
   BadRequestException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import type { TypeBaseProviderOptions, TypeUserInfo } from './types';
@@ -12,6 +13,7 @@ import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class BaseOAuthService {
+  private readonly logger = new Logger(BaseOAuthService.name);
   private BASE_URL: string;
 
   public constructor(
@@ -52,6 +54,7 @@ export class BaseOAuthService {
     });
 
     if (!this.options.access_url) {
+      this.logger.error('Access URL is not defined');
       throw new Error('Access URL is not defined');
     }
 
@@ -65,6 +68,7 @@ export class BaseOAuthService {
     });
 
     if (!tokenRequest.ok) {
+      this.logger.error(`Failed to get user with ${this.options.profile_url}`);
       throw new BadRequestException(
         `Failed to get user with ${this.options.profile_url}`,
       );
@@ -73,12 +77,16 @@ export class BaseOAuthService {
     const tokens = await tokenRequest.json();
 
     if (!tokens.access_token) {
+      this.logger.error(
+        `Access token for ${this.options.profile_url} not found`,
+      );
       throw new BadRequestException(
         `Access token for ${this.options.profile_url} not found`,
       );
     }
 
     if (!this.options.profile_url) {
+      this.logger.error('Profile URL is not defined');
       throw new Error('Profile URL is not defined');
     }
 
@@ -88,6 +96,9 @@ export class BaseOAuthService {
       },
     });
     if (!userRequest.ok) {
+      this.logger.error(
+        `Failed to get user info from ${this.options.profile_url}`,
+      );
       throw new UnauthorizedException(
         `Failed to get user info from ${this.options.profile_url}`,
       );
@@ -105,7 +116,7 @@ export class BaseOAuthService {
   }
 
   public getRedirectUrl(): string {
-    const APP_URL = this.configService.getOrThrow('APPLICATION_URL');
+    const APP_URL = this.configService.getOrThrow<string>('APPLICATION_URL');
 
     return `${APP_URL}/api/auth/oauth/callback/${this.options.name}`;
   }
