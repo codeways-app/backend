@@ -45,7 +45,7 @@ async function main() {
 main()
   .then(async () => {
     await prisma.$disconnect();
-    console.log('PostgreSQL Database seeded successfully');
+    console.log('PostgreSQL database seeded successfully');
   })
   .catch(async (e) => {
     console.error(e);
