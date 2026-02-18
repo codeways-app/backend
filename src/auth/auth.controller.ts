@@ -29,7 +29,7 @@ import { TokensResponse } from './shared/types';
 import { ConnectResponseDto } from './provider/dto';
 
 import { SessionService } from '../session';
-import { AuthService } from './auth.service';
+import { OAuthService } from './oauth';
 import { ProviderService } from './provider';
 import { RecoverService } from './recover';
 import { LoginService } from './login';
@@ -40,7 +40,7 @@ import { RegisterService } from './register';
 export class AuthController {
   public constructor(
     private readonly configService: ConfigService,
-    private readonly authService: AuthService,
+    private readonly oauthService: OAuthService,
     private readonly registerService: RegisterService,
     private readonly loginService: LoginService,
     private readonly providerService: ProviderService,
@@ -223,7 +223,7 @@ export class AuthController {
       throw new BadRequestException('Authorization code is missing');
     }
 
-    const user = await this.authService.extractProfileFromCode(provider, code);
+    const user = await this.oauthService.extractProfileFromCode(provider, code);
 
     const accessToken = await this.sessionService.encrypt({
       sub: user.id,

@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { TokenType, AuthMethod } from '../../../generated/prisma';
@@ -13,6 +14,7 @@ import { EmailConfirmationService } from '../email-confirmation';
 
 @Injectable()
 export class RecoverService {
+  private readonly logger = new Logger(RecoverService.name);
   public constructor(
     private readonly emailConfirmationService: EmailConfirmationService,
     private readonly userService: UserService,
@@ -22,10 +24,12 @@ export class RecoverService {
     const user = await this.userService.findByEmail(dto.email);
 
     if (!user) {
+      this.logger.error(`Email ${dto.email} does not exist`);
       throw new NotFoundException('Email does not exist');
     }
 
     if (user.method != AuthMethod.CREDENTIALS) {
+      this.logger.error(`Email ${dto.email} logined by social`);
       throw new ConflictException('This account uses social login');
     }
 
@@ -60,6 +64,7 @@ export class RecoverService {
     );
 
     if (!isEmailVerified) {
+      this.logger.error(`Email ${dto.email} token is expired`);
       throw new BadRequestException('Token is expired');
     }
 

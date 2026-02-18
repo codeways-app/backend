@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
 } from '@nestjs/common';
 import { AuthMethod, TokenType } from '../../../generated/prisma';
 
@@ -14,6 +15,8 @@ import { EmailConfirmationService } from '../email-confirmation';
 
 @Injectable()
 export class RegisterService {
+  private readonly logger = new Logger(RegisterService.name);
+
   public constructor(
     private readonly emailConfirmationService: EmailConfirmationService,
     private readonly userService: UserService,
@@ -24,6 +27,7 @@ export class RegisterService {
     const isEmailExists = await this.userService.findByEmail(dto.email);
 
     if (isEmailExists) {
+      this.logger.error(`Email ${dto.email} already exists`);
       throw new ConflictException('Email already exists');
     }
 
@@ -54,6 +58,7 @@ export class RegisterService {
     const isLoginExists = await this.userService.findByLogin(dto.login);
 
     if (isLoginExists) {
+      this.logger.error(`Login ${dto.login} already`);
       throw new ConflictException('Login already exists');
     }
 
@@ -64,6 +69,7 @@ export class RegisterService {
     );
 
     if (!isEmailVerified) {
+      this.logger.error(`Email ${dto.email} token is expired`);
       throw new BadRequestException('Token is expired');
     }
 
@@ -79,6 +85,10 @@ export class RegisterService {
       '',
       '',
       AuthMethod.CREDENTIALS,
+    );
+
+    this.logger.log(
+      `Created new user:\n id:${newUser.id}\n login:${newUser.login}\n email:${newUser.email}`,
     );
 
     return {

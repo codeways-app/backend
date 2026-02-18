@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -16,6 +17,8 @@ import { EmailConfirmationService } from '../email-confirmation';
 
 @Injectable()
 export class LoginService {
+  private readonly logger = new Logger(LoginService.name);
+
   public constructor(
     private readonly userService: UserService,
     private readonly sessionService: SessionService,
@@ -28,12 +31,14 @@ export class LoginService {
     const invalidMsg = 'Invalid login or password';
 
     if (!user) {
+      this.logger.error(`User ${dto.login} not found`);
       throw new UnauthorizedException(invalidMsg);
     }
 
     const isValidPassword = await verify(user.password, dto.password);
 
     if (!isValidPassword) {
+      this.logger.error(`Invalid user ${dto.login} password`);
       throw new UnauthorizedException(invalidMsg);
     }
 
@@ -69,6 +74,7 @@ export class LoginService {
     const user = await this.userService.findByLogin(dto.login);
 
     if (!user) {
+      this.logger.error(`User ${dto.login} not found`);
       throw new NotFoundException(`User ${dto.login} not found`);
     }
 
