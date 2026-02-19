@@ -8,9 +8,9 @@ import { Server, Socket } from 'socket.io';
 import { UseGuards } from '@nestjs/common';
 import { WsJwtGuard } from './shared/guards/ws-jwt.guard';
 import { SocketAuthMiddleware } from './shared/guards/ws.mw';
-import { SessionService } from '../session/session.service';
 import type { AuthenticatedSocket } from './shared/types/ws.types';
-import { ChatService } from './chats.service';
+import { SessionService } from '../session/session.service';
+import { ChatService } from './chat.service';
 
 @UseGuards(WsJwtGuard)
 @WebSocketGateway(3001, {})
@@ -45,12 +45,12 @@ export class EventsGateway {
   @SubscribeMessage('joinRoom')
   async handleJoinRoom(client: AuthenticatedSocket, room: string) {
     console.log(room);
-    const member = await this.chatService.findMember(
+    const isMember = await this.chatService.isChatMember(
       room,
       client.data.user.sub,
     );
 
-    if (!member) {
+    if (!isMember) {
       console.log('Access denied: not a chat member');
       throw new WsException('Access denied: not a chat member');
     }

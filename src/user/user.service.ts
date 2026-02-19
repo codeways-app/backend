@@ -82,7 +82,6 @@ export class UserService {
         password: await hash(newPassword),
       },
     });
-
     return user;
   }
 }

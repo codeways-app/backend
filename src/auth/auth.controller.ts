@@ -35,7 +35,7 @@ import { RecoverService } from './recover';
 import { LoginService } from './login';
 import { RegisterService } from './register';
 
-@ApiTags('Auth')
+@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   public constructor(

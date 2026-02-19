@@ -3,20 +3,21 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Query,
   UseGuards,
   Request,
+  Param,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ChatService } from './chats.service';
+import { ChatService } from './chat.service';
 import { ChatListResponseDto } from './shared/dto/chat-list.dto';
 import { AuthGuard } from '../auth/shared/guards/auth.guard';
 import type { RequestWithUser } from '../auth/shared/types';
+import { ChatGuard } from './shared/guards/chat.guard';
 
-@ApiTags('Chats')
+@ApiTags('chats')
 @UseGuards(AuthGuard)
-@Controller('chatslist')
-export class ChatsListController {
+@Controller('chats')
+export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
   // ────────────────────────────────────────────────
@@ -28,41 +29,33 @@ export class ChatsListController {
   @ApiResponse({
     status: 200,
     type: ChatListResponseDto,
-    description: 'List of user chats',
+    description: "List of user's chats",
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized.',
   })
   public async getMyChats(@Request() req: RequestWithUser) {
     return this.chatService.getUserChats(req.user.id);
   }
-}
-
-@ApiTags('Chat')
-@UseGuards(AuthGuard)
-@Controller('chat')
-export class ChatController {
-  constructor(private readonly chatService: ChatService) {}
 
   // ────────────────────────────────────────────────
   // Get chat messages
   // ────────────────────────────────────────────────
-  @Get()
+
+  @Get(':id')
+  @UseGuards(ChatGuard)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Get all chats of current user' })
+  @ApiOperation({ summary: 'Get chat messages' })
   @ApiResponse({
     status: 200,
     type: ChatListResponseDto,
-    description: 'List of user chats',
+    description: 'User chat messages',
   })
   public async getChatById(
-    @Query('id') id: string,
+    @Param('id') id: string,
     @Request() req: RequestWithUser,
   ) {
-    if (!id) {
-      throw new Error('Chat id query param is required');
-    }
-    const isMember = await this.chatService.findMember(id, req.user.id);
-    if (!isMember) {
-      throw new Error('User is not a member of this chat');
-    }
-    return this.chatService.getChatMessages(req.user.id, id);
+    return this.chatService.getChatMessages(id, req.user.id);
   }
 }

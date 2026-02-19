@@ -72,6 +72,7 @@ model Chat {
 
   type ChatType @default(PRIVATE)
   title String?
+  picture String?
 
   messages Message[]
   members ChatMember[]

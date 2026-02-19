@@ -38,7 +38,7 @@ export class LoginService {
     const isValidPassword = await verify(user.password, dto.password);
 
     if (!isValidPassword) {
-      this.logger.error(`Invalid user ${dto.login} password`);
+      this.logger.error(`Invalid password attempt for user ${user.id}`);
       throw new UnauthorizedException(invalidMsg);
     }
 
@@ -74,8 +74,8 @@ export class LoginService {
     const user = await this.userService.findByLogin(dto.login);
 
     if (!user) {
-      this.logger.error(`User ${dto.login} not found`);
-      throw new NotFoundException(`User ${dto.login} not found`);
+      this.logger.error(`User not found`);
+      throw new NotFoundException(`User not found`);
     }
 
     await this.emailConfirmationService.isTokenMatch(
