@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { EventsGateway } from './events.gateway';
-import { ChatService } from './chats.service';
+import { ChatService } from './chat.service';
 import { SessionService } from '../session/session.service';
 import { ChatController } from './chat.controller';
 import { UserService } from '../user';
