@@ -3,7 +3,7 @@ import {
   AuthMethod,
   UserRole,
   ChatType,
-  MessageStatusEnum,
+  MessageStatusType,
 } from '../generated/prisma';
 import { hash } from 'argon2';
 
@@ -73,17 +73,17 @@ async function main() {
     {
       senderId: adminId,
       content: 'Hi! How are you?',
-      statuses: [{ userId: spasontisId, status: MessageStatusEnum.SENT }],
+      statuses: [{ userId: spasontisId, status: MessageStatusType.READ }],
     },
     {
       senderId: spasontisId,
       content: 'Hi, I am fine! How are you?',
-      statuses: [{ userId: adminId, status: MessageStatusEnum.SENT }],
+      statuses: [{ userId: adminId, status: MessageStatusType.READ }],
     },
     {
       senderId: adminId,
       content: 'I am fine too. Ready to work on the project?',
-      statuses: [{ userId: spasontisId, status: MessageStatusEnum.DELIVERED }],
+      statuses: [{ userId: spasontisId, status: MessageStatusType.SENT }],
     },
   ];
 

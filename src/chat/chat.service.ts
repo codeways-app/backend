@@ -1,8 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { MessageStatusType, ContentType } from '../../generated/prisma';
+import { SendMessageDto } from './shared/dto/message-send.dto';
 
 @Injectable()
 export class ChatService {
+  private readonly logger = new Logger(ChatService.name);
   public constructor(private readonly prismaService: PrismaService) {}
 
   public async isChatMember(chatId: string, userId: string) {
@@ -59,6 +62,11 @@ export class ChatService {
             sender: {
               select: { id: true, login: true, name: true, picture: true },
             },
+            statuses: {
+              where: { userId },
+              take: 1,
+              select: { status: true },
+            },
           },
         },
       },
@@ -75,36 +83,115 @@ export class ChatService {
           picture = otherMember.user.picture;
         }
       }
+      const lastMessageRaw = messages[0] ?? null;
+
+      const lastMessage = lastMessageRaw
+        ? (() => {
+            const { statuses, ...message } = lastMessageRaw;
+
+            return {
+              ...message,
+              status: statuses[0]?.status ?? null,
+            };
+          })()
+        : null;
 
       return {
         ...chat,
         title,
         picture,
         unreadCount: _count.messages,
-        lastMessage: messages[0] ?? null,
+        lastMessage,
       };
     });
   }
 
-  public async getChatMessages(chatId: string, userId: string) {
-    const messages = await this.prismaService.message.findMany({
-      where: { chatId },
-      take: 20,
-      orderBy: { createdAt: 'desc' },
+  public async getChat(chatId: string, userId: string) {
+    const chat = await this.prismaService.chat.findUnique({
+      where: { id: chatId },
+      include: {
+        members: {
+          include: {
+            user: {
+              select: { id: true, login: true, name: true, picture: true },
+            },
+          },
+        },
+        messages: {
+          take: 20,
+          orderBy: { createdAt: 'asc' },
+          include: {
+            sender: {
+              select: { id: true, login: true, name: true, picture: true },
+            },
+            statuses: {
+              select: {
+                userId: true,
+                status: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!chat) {
+      return null;
+    }
+
+    let title = chat.title;
+
+    if (chat.type === 'PRIVATE') {
+      const otherMember = chat.members.find((m) => m.user.id !== userId);
+      if (otherMember) {
+        title = otherMember.user.login;
+      }
+    }
+
+    return {
+      title,
+      additionalInfo: 'additional info',
+      messages: chat.messages.map(({ statuses, ...message }) => ({
+        ...message,
+        status:
+          message.senderId === userId ? (statuses[0]?.status ?? null) : null,
+      })),
+    };
+  }
+
+  public async createMessage(dto: SendMessageDto) {
+    const type = dto.message.type.toUpperCase() as ContentType;
+
+    const message = await this.prismaService.message.create({
+      data: {
+        chatId: dto.chatId,
+        senderId: dto.userId,
+        content: dto.message.content,
+        type,
+        replyToId: dto.message.replyToId ?? null,
+        statuses: {
+          create: {
+            userId: dto.userId,
+            status: MessageStatusType.SENT,
+          },
+        },
+      },
       include: {
         sender: {
           select: { id: true, login: true, name: true, picture: true },
         },
         statuses: {
-          where: { userId },
-          take: 1,
+          where: { userId: dto.userId },
           select: { status: true },
         },
       },
     });
-    return messages.map(({ statuses, ...message }) => ({
-      ...message,
+
+    const { statuses, ...messageData } = message;
+
+    return {
+      ...messageData,
       status: statuses[0]?.status ?? null,
-    }));
+    };
   }
 }

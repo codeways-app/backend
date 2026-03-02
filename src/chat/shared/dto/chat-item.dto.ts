@@ -1,15 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { LastMessageDto } from './last-message.dto';
+import { MessageResponseDto } from './message-response.dto';
 
 export class ChatItemDto {
   @ApiProperty()
-  id: number;
+  id: string;
 
   @ApiProperty()
-  name: string;
+  title: string;
 
-  @ApiProperty({ type: LastMessageDto })
-  lastMessage: LastMessageDto;
+  @ApiProperty({ type: MessageResponseDto })
+  lastMessage: MessageResponseDto;
 
   @ApiProperty()
   unreadCount: number;

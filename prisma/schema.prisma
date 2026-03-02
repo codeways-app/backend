@@ -129,7 +129,7 @@ model MessageStatus{
   user User @relation(fields: [userId], references: [id])
   userId String @map("user_id")
 
-  status MessageStatusEnum @default(SENT)
+  status MessageStatusType @default(SENT)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -162,10 +162,11 @@ enum ChatType {
 enum ContentType {
   TEXT
   IMAGE
+  VIDEO
   FILE
 }
 
-enum MessageStatusEnum {
+enum MessageStatusType {
   SENT
   DELIVERED
   READ
