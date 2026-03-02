@@ -6,19 +6,28 @@ import {
   UseGuards,
   Request,
   Param,
+  Post,
+  Body,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ChatService } from './chat.service';
-import { ChatListResponseDto } from './shared/dto/chat-list.dto';
+import { EventsGateway } from './events.gateway';
 import { AuthGuard } from '../auth/shared/guards/auth.guard';
 import type { RequestWithUser } from '../auth/shared/types';
 import { ChatGuard } from './shared/guards/chat.guard';
+import { ChatDto } from './shared/dto/chat.dto';
+import { ChatItemDto } from './shared/dto/chat-item.dto';
+import { MessageResponseDto } from './shared/dto/message-response.dto';
+import { SendMessageDto } from './shared/dto/message-send.dto';
 
 @ApiTags('chats')
 @UseGuards(AuthGuard)
 @Controller('chats')
 export class ChatController {
-  constructor(private readonly chatService: ChatService) {}
+  constructor(
+    private readonly chatService: ChatService,
+    private readonly eventsGateway: EventsGateway,
+  ) {}
 
   // ────────────────────────────────────────────────
   // Get all chats for current user
@@ -28,7 +37,8 @@ export class ChatController {
   @ApiOperation({ summary: 'Get all chats of current user' })
   @ApiResponse({
     status: 200,
-    type: ChatListResponseDto,
+    type: ChatItemDto,
+    isArray: true,
     description: "List of user's chats",
   })
   @ApiResponse({
@@ -42,20 +52,61 @@ export class ChatController {
   // ────────────────────────────────────────────────
   // Get chat messages
   // ────────────────────────────────────────────────
-
   @Get(':id')
   @UseGuards(ChatGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get chat messages' })
   @ApiResponse({
     status: 200,
-    type: ChatListResponseDto,
+    type: ChatDto,
     description: 'User chat messages',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized.',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden.',
   })
   public async getChatById(
     @Param('id') id: string,
     @Request() req: RequestWithUser,
   ) {
-    return this.chatService.getChatMessages(id, req.user.id);
+    return this.chatService.getChat(id, req.user.id);
+  }
+
+  // ────────────────────────────────────────────────
+  // Send message
+  // ────────────────────────────────────────────────
+  @Post(':id/messages')
+  @UseGuards(ChatGuard)
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Send message to chat' })
+  @ApiResponse({
+    status: 201,
+    type: MessageResponseDto,
+    description: 'Message was sent successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized.',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden.',
+  })
+  public async sendMessage(
+    @Param('id') id: string,
+    @Body() dto: SendMessageDto,
+    @Request() req: RequestWithUser,
+  ) {
+    const newMessage = await this.chatService.createMessage({
+      chatId: id,
+      userId: req.user.id,
+      message: dto.message,
+    });
+
+    return newMessage;
   }
 }
