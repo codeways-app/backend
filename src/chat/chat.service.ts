@@ -8,6 +8,38 @@ export class ChatService {
   private readonly logger = new Logger(ChatService.name);
   public constructor(private readonly prismaService: PrismaService) {}
 
+  private async markMessagesAsRead(chatId: string, userId: string) {
+    await this.prismaService.messageStatus.updateMany({
+      where: {
+        userId,
+        message: { chatId },
+        NOT: { status: MessageStatusType.READ },
+      },
+      data: { status: MessageStatusType.READ },
+    });
+
+    const messagesWithoutStatus = await this.prismaService.message.findMany({
+      where: {
+        chatId,
+        NOT: { senderId: userId },
+        statuses: {
+          none: { userId },
+        },
+      },
+      select: { id: true },
+    });
+
+    if (messagesWithoutStatus.length > 0) {
+      await this.prismaService.messageStatus.createMany({
+        data: messagesWithoutStatus.map((m) => ({
+          messageId: m.id,
+          userId,
+          status: MessageStatusType.READ,
+        })),
+      });
+    }
+  }
+
   public async isChatMember(chatId: string, userId: string) {
     const member = await this.prismaService.chatMember.findFirst({
       where: {
@@ -148,7 +180,7 @@ export class ChatService {
       }
     }
 
-    return {
+    const result = {
       title,
       additionalInfo: 'additional info',
       messages: chat.messages.map(({ statuses, ...message }) => ({
@@ -157,9 +189,12 @@ export class ChatService {
           message.senderId === userId ? (statuses[0]?.status ?? null) : null,
       })),
     };
+
+    return result;
   }
 
   public async createMessage(dto: SendMessageDto) {
+    await this.markMessagesAsRead(dto.chatId, dto.userId);
     const type = dto.message.type.toUpperCase() as ContentType;
 
     const message = await this.prismaService.message.create({

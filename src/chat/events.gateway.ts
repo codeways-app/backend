@@ -4,17 +4,19 @@ import {
   WebSocketServer,
   WsException,
 } from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
+import { Server } from 'socket.io';
 import { UseGuards } from '@nestjs/common';
 import { WsJwtGuard } from './shared/guards/ws-jwt.guard';
 import { SocketAuthMiddleware } from './shared/guards/ws.mw';
 import type { AuthenticatedSocket } from './shared/types/ws.types';
 import { SessionService } from '../session/session.service';
 import { ChatService } from './chat.service';
+import { Logger } from '@nestjs/common';
 
 @UseGuards(WsJwtGuard)
 @WebSocketGateway(3001, {})
 export class EventsGateway {
+  private readonly logger: Logger = new Logger(EventsGateway.name);
   constructor(
     private readonly sessionService: SessionService,
     private readonly chatService: ChatService,
@@ -27,18 +29,12 @@ export class EventsGateway {
   }
   // USER CONNECTION
   handleConnection(client: AuthenticatedSocket) {
-    console.log(
-      'New Websocket connection:',
-      '\n id:',
-      client.id,
-      '\n user:',
-      client.data.user.login,
-    );
+    this.logger.log(`New Websocket connection: ${client.data.user.login}`);
   }
 
   // USER DISCONNECTION
-  handleDisconnect(client: Socket) {
-    console.log('Websocket disconnected:', client.id);
+  handleDisconnect(client: AuthenticatedSocket) {
+    this.logger.error(`Websocket disconnected: ${client.data.user.login}`);
   }
 
   // JOIN ROOM
