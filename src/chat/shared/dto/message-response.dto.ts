@@ -1,6 +1,8 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import { ContentType, MessageStatusType } from '../../../../generated/prisma';
+
+import { MessageSenderDto } from './message-sender.dto';
 
 export class MessageResponseDto {
   @ApiProperty()
@@ -13,7 +15,7 @@ export class MessageResponseDto {
   type: ContentType;
 
   @ApiProperty()
-  senderId: string;
+  sender: MessageSenderDto;
 
   @ApiProperty()
   createdAt: string;
@@ -21,7 +23,7 @@ export class MessageResponseDto {
   @ApiProperty()
   updatedAt?: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
   replyToId?: string;
 
   @ApiProperty({ enum: MessageStatusType })

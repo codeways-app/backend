@@ -4,14 +4,15 @@ import {
   WebSocketServer,
   WsException,
 } from '@nestjs/websockets';
+import { UseGuards, Logger } from '@nestjs/common';
 import { Server } from 'socket.io';
-import { UseGuards } from '@nestjs/common';
-import { WsJwtGuard } from './shared/guards/ws-jwt.guard';
-import { SocketAuthMiddleware } from './shared/guards/ws.mw';
-import type { AuthenticatedSocket } from './shared/types/ws.types';
+
+import { WsJwtGuard, SocketAuthMiddleware } from './shared/guards';
+import type { AuthenticatedSocket } from './shared/types';
+
 import { SessionService } from '../session/session.service';
+
 import { ChatService } from './chat.service';
-import { Logger } from '@nestjs/common';
 
 @UseGuards(WsJwtGuard)
 @WebSocketGateway(3001, {})
@@ -27,20 +28,16 @@ export class EventsGateway {
   afterInit(server: Server) {
     server.use(SocketAuthMiddleware(this.sessionService));
   }
-  // USER CONNECTION
   handleConnection(client: AuthenticatedSocket) {
     this.logger.log(`New Websocket connection: ${client.data.user.login}`);
   }
 
-  // USER DISCONNECTION
   handleDisconnect(client: AuthenticatedSocket) {
     this.logger.error(`Websocket disconnected: ${client.data.user.login}`);
   }
 
-  // JOIN ROOM
   @SubscribeMessage('joinRoom')
   async handleJoinRoom(client: AuthenticatedSocket, room: string) {
-    console.log(room);
     const isMember = await this.chatService.isChatMember(
       room,
       client.data.user.sub,
@@ -53,14 +50,10 @@ export class EventsGateway {
 
     await client.join(room);
 
-    console.log(
-      'User joined room:',
-      '\n user:',
-      client.data.user.login,
-      '\n room:',
-      room,
-    );
-
     client.to(room).emit('broadcasting', room);
+  }
+
+  emitMessage(chatId: string, message: any) {
+    this.server.to(chatId).emit('newMessage', message);
   }
 }

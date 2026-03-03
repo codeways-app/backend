@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+
 import { MessageResponseDto } from './message-response.dto';
 
 export class ChatDto {
