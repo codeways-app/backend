@@ -1,4 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
 import { MessageResponseDto } from './message-response.dto';
 
 export class ChatItemDto {
@@ -8,9 +9,12 @@ export class ChatItemDto {
   @ApiProperty()
   title: string;
 
-  @ApiProperty({ type: MessageResponseDto })
-  lastMessage: MessageResponseDto;
+  @ApiPropertyOptional({ type: MessageResponseDto })
+  lastMessage?: MessageResponseDto;
 
-  @ApiProperty()
-  unreadCount: number;
+  @ApiPropertyOptional()
+  picture?: string;
+
+  @ApiPropertyOptional()
+  unreadCount?: number;
 }

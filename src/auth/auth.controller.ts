@@ -71,7 +71,7 @@ export class AuthController {
   @ApiBody({ type: EmailDto })
   @ApiResponse({
     status: 200,
-    description: 'Verification Token was successfully sent to the email.',
+    description: 'Verification Token was successfully sent to the email',
   })
   @ApiResponse({
     status: 409,
@@ -91,11 +91,11 @@ export class AuthController {
   @ApiBody({ type: VerifyDto })
   @ApiResponse({
     status: 200,
-    description: 'Email successfully verified.',
+    description: 'Email successfully verified',
   })
   @ApiResponse({
     status: 400,
-    description: 'Invalid verification Token.',
+    description: 'Invalid verification Token',
   })
   public async verifyEmail(@Body() dto: VerifyDto) {
     return this.registerService.verifyEmail(dto);
@@ -249,7 +249,7 @@ export class AuthController {
   @ApiBody({ type: EmailDto })
   @ApiResponse({
     status: 200,
-    description: 'Recover Token was successfully sent to the email.',
+    description: 'Recover Token was successfully sent to the email',
   })
   @ApiResponse({
     status: 404,
@@ -273,11 +273,11 @@ export class AuthController {
   @ApiBody({ type: VerifyDto })
   @ApiResponse({
     status: 200,
-    description: 'Recover successfully verified.',
+    description: 'Recover successfully verified',
   })
   @ApiResponse({
     status: 400,
-    description: 'Invalid verification Token.',
+    description: 'Invalid verification Token',
   })
   public async verifyRecover(@Body() dto: VerifyDto) {
     return this.recoverService.verifyRecover(dto);

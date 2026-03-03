@@ -1,232 +1,129 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  Inject,
+  forwardRef,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { MessageStatusType, ContentType } from '../../generated/prisma';
-import { SendMessageDto } from './shared/dto/message-send.dto';
+import { MessageDto } from './shared/dto/message.dto';
+import { EventsGateway } from './events.gateway';
+import { ChatMapper } from './chat.mapper';
+import { ChatItemDto, ChatDto, MessageResponseDto } from './shared/dto';
+
+import { CHAT_INCLUDE, MESSAGE_INCLUDE, USER_SELECT } from './shared/constants';
 
 @Injectable()
 export class ChatService {
   private readonly logger = new Logger(ChatService.name);
-  public constructor(private readonly prismaService: PrismaService) {}
 
-  private async markMessagesAsRead(chatId: string, userId: string) {
+  public constructor(
+    private readonly prismaService: PrismaService,
+    private readonly chatMapper: ChatMapper,
+    @Inject(forwardRef(() => EventsGateway))
+    private readonly eventsGateway: EventsGateway,
+  ) {}
+
+  public async markMessagesAsRead(
+    chatId: string,
+    userId: string,
+  ): Promise<void> {
     await this.prismaService.messageStatus.updateMany({
       where: {
         userId,
-        message: { chatId },
+        message: { chatId, NOT: { senderId: userId } },
         NOT: { status: MessageStatusType.READ },
       },
       data: { status: MessageStatusType.READ },
     });
-
-    const messagesWithoutStatus = await this.prismaService.message.findMany({
-      where: {
-        chatId,
-        NOT: { senderId: userId },
-        statuses: {
-          none: { userId },
-        },
-      },
-      select: { id: true },
-    });
-
-    if (messagesWithoutStatus.length > 0) {
-      await this.prismaService.messageStatus.createMany({
-        data: messagesWithoutStatus.map((m) => ({
-          messageId: m.id,
-          userId,
-          status: MessageStatusType.READ,
-        })),
-      });
-    }
   }
 
-  public async isChatMember(chatId: string, userId: string) {
+  public async isChatMember(chatId: string, userId: string): Promise<boolean> {
     const member = await this.prismaService.chatMember.findFirst({
-      where: {
-        chatId,
-        userId,
-      },
+      where: { chatId, userId },
+      select: { id: true },
     });
 
     return !!member;
   }
 
-  public async getUserChats(userId: string) {
+  public async getUserChats(userId: string): Promise<ChatItemDto[]> {
     const chats = await this.prismaService.chat.findMany({
       where: {
-        members: {
-          some: { userId },
-        },
+        members: { some: { userId } },
       },
-      include: {
-        members: {
-          include: {
-            user: {
-              select: { id: true, login: true, name: true, picture: true },
-            },
-          },
-        },
-        _count: {
-          select: {
-            messages: {
-              where: {
-                NOT: { senderId: userId },
-                statuses: {
-                  none: {
-                    userId,
-                    status: 'READ',
-                  },
-                },
-              },
-            },
-          },
-        },
-        messages: {
-          take: 1,
-          orderBy: {
-            createdAt: 'desc',
-          },
-          select: {
-            id: true,
-            content: true,
-            createdAt: true,
-            updatedAt: true,
-            sender: {
-              select: { id: true, login: true, name: true, picture: true },
-            },
-            statuses: {
-              where: { userId },
-              take: 1,
-              select: { status: true },
-            },
-          },
-        },
-      },
+      include: CHAT_INCLUDE(userId),
+      orderBy: { updatedAt: 'desc' },
     });
 
-    return chats.map(({ messages, members, _count, ...chat }) => {
-      let title = chat.title;
-      let picture = chat.picture;
-
-      if (chat.type === 'PRIVATE') {
-        const otherMember = members.find((m) => m.user.id !== userId);
-        if (otherMember) {
-          title = otherMember.user.login;
-          picture = otherMember.user.picture;
-        }
-      }
-      const lastMessageRaw = messages[0] ?? null;
-
-      const lastMessage = lastMessageRaw
-        ? (() => {
-            const { statuses, ...message } = lastMessageRaw;
-
-            return {
-              ...message,
-              status: statuses[0]?.status ?? null,
-            };
-          })()
-        : null;
-
-      return {
-        ...chat,
-        title,
-        picture,
-        unreadCount: _count.messages,
-        lastMessage,
-      };
-    });
+    return chats.map((chat) => this.chatMapper.toChatItemDto(chat, userId));
   }
 
-  public async getChat(chatId: string, userId: string) {
-    const chat = await this.prismaService.chat.findUnique({
-      where: { id: chatId },
+  public async getChat(chatId: string, userId: string): Promise<ChatDto> {
+    const chat = await this.prismaService.chat.findFirst({
+      where: {
+        id: chatId,
+        members: { some: { userId } },
+      },
       include: {
         members: {
           include: {
-            user: {
-              select: { id: true, login: true, name: true, picture: true },
-            },
+            user: { select: USER_SELECT },
           },
         },
         messages: {
-          take: 20,
-          orderBy: { createdAt: 'asc' },
-          include: {
-            sender: {
-              select: { id: true, login: true, name: true, picture: true },
-            },
-            statuses: {
-              select: {
-                userId: true,
-                status: true,
-              },
-            },
-          },
+          take: 100,
+          orderBy: { createdAt: 'desc' },
+          include: MESSAGE_INCLUDE(userId),
         },
       },
     });
 
     if (!chat) {
-      return null;
+      throw new ForbiddenException('Chat not found or access denied');
     }
 
-    let title = chat.title;
+    await this.markMessagesAsRead(chatId, userId);
 
-    if (chat.type === 'PRIVATE') {
-      const otherMember = chat.members.find((m) => m.user.id !== userId);
-      if (otherMember) {
-        title = otherMember.user.login;
-      }
-    }
-
-    const result = {
-      title,
-      additionalInfo: 'additional info',
-      messages: chat.messages.map(({ statuses, ...message }) => ({
-        ...message,
-        status:
-          message.senderId === userId ? (statuses[0]?.status ?? null) : null,
-      })),
-    };
-
-    return result;
+    return this.chatMapper.toChatDto(chat, userId);
   }
 
-  public async createMessage(dto: SendMessageDto) {
-    await this.markMessagesAsRead(dto.chatId, dto.userId);
-    const type = dto.message.type.toUpperCase() as ContentType;
+  public async createMessage(
+    chatId: string,
+    userId: string,
+    message: MessageDto,
+  ): Promise<MessageResponseDto> {
+    const isMember = await this.isChatMember(chatId, userId);
+    if (!isMember) {
+      throw new ForbiddenException('You are not a member of this chat');
+    }
 
-    const message = await this.prismaService.message.create({
+    await this.markMessagesAsRead(chatId, userId);
+
+    const type = message.type.toUpperCase() as ContentType;
+
+    const newMessage = await this.prismaService.message.create({
       data: {
-        chatId: dto.chatId,
-        senderId: dto.userId,
-        content: dto.message.content,
+        chatId,
+        senderId: userId,
+        content: message.content,
         type,
-        replyToId: dto.message.replyToId ?? null,
+        replyToId: message.replyToId ?? null,
         statuses: {
           create: {
-            userId: dto.userId,
-            status: MessageStatusType.SENT,
+            userId,
+            status: MessageStatusType.DELIVERED,
           },
         },
       },
-      include: {
-        sender: {
-          select: { id: true, login: true, name: true, picture: true },
-        },
-        statuses: {
-          where: { userId: dto.userId },
-          select: { status: true },
-        },
-      },
+      include: MESSAGE_INCLUDE(userId),
     });
 
-    const { statuses, ...messageData } = message;
+    const result = this.chatMapper.toMessageResponseDto(newMessage, userId);
 
-    return {
-      ...messageData,
-      status: statuses[0]?.status ?? null,
-    };
+    this.eventsGateway.emitMessage(chatId, result);
+
+    return result;
   }
 }
