@@ -9,6 +9,7 @@ import { Server } from 'socket.io';
 
 import { WsJwtGuard, SocketAuthMiddleware } from './shared/guards';
 import type { AuthenticatedSocket } from './shared/types';
+import { MessageResponseDto } from './shared/dto';
 
 import { SessionService } from '../session/session.service';
 
@@ -44,7 +45,6 @@ export class EventsGateway {
     );
 
     if (!isMember) {
-      console.log('Access denied: not a chat member');
       throw new WsException('Access denied: not a chat member');
     }
 
@@ -53,7 +53,7 @@ export class EventsGateway {
     client.to(room).emit('broadcasting', room);
   }
 
-  emitMessage(chatId: string, message: any) {
+  emitMessage(chatId: string, message: MessageResponseDto) {
     this.server.to(chatId).emit('newMessage', message);
   }
 }

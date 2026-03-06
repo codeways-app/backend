@@ -21,11 +21,11 @@ export class MessageResponseDto {
   createdAt: string;
 
   @ApiProperty()
-  updatedAt?: string;
+  updatedAt: string;
+
+  @ApiPropertyOptional({ enum: MessageStatusType })
+  status?: MessageStatusType;
 
   @ApiPropertyOptional()
   replyToId?: string;
-
-  @ApiProperty({ enum: MessageStatusType })
-  status: MessageStatusType;
 }

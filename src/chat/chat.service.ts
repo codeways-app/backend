@@ -19,10 +19,10 @@ export class ChatService {
   private readonly logger = new Logger(ChatService.name);
 
   public constructor(
-    private readonly prismaService: PrismaService,
-    private readonly chatMapper: ChatMapper,
     @Inject(forwardRef(() => EventsGateway))
     private readonly eventsGateway: EventsGateway,
+    private readonly prismaService: PrismaService,
+    private readonly chatMapper: ChatMapper,
   ) {}
 
   public async markMessagesAsRead(
@@ -31,9 +31,9 @@ export class ChatService {
   ): Promise<void> {
     await this.prismaService.messageStatus.updateMany({
       where: {
-        userId,
-        message: { chatId, NOT: { senderId: userId } },
-        NOT: { status: MessageStatusType.READ },
+        userId: { not: userId },
+        message: { chatId },
+        status: { not: MessageStatusType.READ },
       },
       data: { status: MessageStatusType.READ },
     });
@@ -60,7 +60,13 @@ export class ChatService {
     return chats.map((chat) => this.chatMapper.toChatItemDto(chat, userId));
   }
 
-  public async getChat(chatId: string, userId: string): Promise<ChatDto> {
+  public async getChatWithMessages(
+    chatId: string,
+    userId: string,
+  ): Promise<ChatDto> {
+    // TODO: mark messages as read
+    // await this.markMessagesAsRead(chatId, userId);
+
     const chat = await this.prismaService.chat.findFirst({
       where: {
         id: chatId,
@@ -73,9 +79,8 @@ export class ChatService {
           },
         },
         messages: {
-          take: 100,
           orderBy: { createdAt: 'desc' },
-          include: MESSAGE_INCLUDE(userId),
+          include: MESSAGE_INCLUDE(),
         },
       },
     });
@@ -83,8 +88,6 @@ export class ChatService {
     if (!chat) {
       throw new ForbiddenException('Chat not found or access denied');
     }
-
-    await this.markMessagesAsRead(chatId, userId);
 
     return this.chatMapper.toChatDto(chat, userId);
   }
@@ -99,8 +102,6 @@ export class ChatService {
       throw new ForbiddenException('You are not a member of this chat');
     }
 
-    await this.markMessagesAsRead(chatId, userId);
-
     const type = message.type.toUpperCase() as ContentType;
 
     const newMessage = await this.prismaService.message.create({
@@ -109,7 +110,7 @@ export class ChatService {
         senderId: userId,
         content: message.content,
         type,
-        replyToId: message.replyToId ?? null,
+        ...(message.replyToId && { replyToId: message.replyToId }),
         statuses: {
           create: {
             userId,
@@ -117,13 +118,18 @@ export class ChatService {
           },
         },
       },
-      include: MESSAGE_INCLUDE(userId),
+      include: MESSAGE_INCLUDE(),
     });
 
-    const result = this.chatMapper.toMessageResponseDto(newMessage, userId);
+    const messageResponse = this.chatMapper.toMessageResponseDto(
+      newMessage,
+      userId,
+    );
 
-    this.eventsGateway.emitMessage(chatId, result);
+    this.eventsGateway.emitMessage(chatId, messageResponse);
 
-    return result;
+    await this.markMessagesAsRead(chatId, userId);
+
+    return messageResponse;
   }
 }
