@@ -67,7 +67,9 @@ export class AuthController {
   @Recaptcha()
   @Post('register/send-code')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Step 1: Enter email & send Verification Token' })
+  @ApiOperation({
+    summary: 'Registration. Step 1: Enter email & send Verification Token',
+  })
   @ApiBody({ type: EmailDto })
   @ApiResponse({
     status: 200,
@@ -87,7 +89,9 @@ export class AuthController {
   @Recaptcha()
   @Post('register/verify-email')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Step 2: Verify email with received Token' })
+  @ApiOperation({
+    summary: 'Registration. Step 2: Verify email with received Token',
+  })
   @ApiBody({ type: VerifyDto })
   @ApiResponse({
     status: 200,
@@ -107,7 +111,9 @@ export class AuthController {
   @Recaptcha()
   @Post('register')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Step 3: Complete registration and create account' })
+  @ApiOperation({
+    summary: 'Registration.Step 3: Complete registration and create account',
+  })
   @ApiBody({ type: RegisterDto })
   @ApiResponse({
     status: 200,
@@ -131,7 +137,7 @@ export class AuthController {
   // ────────────────────────────────────────────────
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'User login' })
+  @ApiOperation({ summary: 'Login. Step 1: Enter account credentials' })
   @ApiBody({ type: LoginDto })
   @ApiResponse({
     status: 200,
@@ -159,7 +165,7 @@ export class AuthController {
   // ────────────────────────────────────────────────
   @Post('login/two-factor')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Two-Factor Verification' })
+  @ApiOperation({ summary: 'Login. Step 2: Two-Factor Verification' })
   @ApiBody({ type: TwoFactorDto })
   @ApiResponse({
     status: 200,
@@ -186,6 +192,9 @@ export class AuthController {
   // OAuth — Step 1: Connect provider
   // ────────────────────────────────────────────────
   @UseGuards(AuthProviderGuard)
+  @ApiOperation({
+    summary: 'OAuth. Step 1: Connect provider',
+  })
   @Get('oauth/connect/:provider')
   @ApiResponse({
     status: 200,
@@ -208,6 +217,9 @@ export class AuthController {
   // OAuth — Step 2: Provider callback
   // ────────────────────────────────────────────────
   @UseGuards(AuthProviderGuard)
+  @ApiOperation({
+    summary: 'OAuth. Step 2: Provider callback',
+  })
   @Get('oauth/callback/:provider')
   @ApiResponse({
     status: 200,
@@ -245,7 +257,9 @@ export class AuthController {
   @Recaptcha()
   @Post('recover/send-code')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Step 1: Enter email & send recover Token' })
+  @ApiOperation({
+    summary: 'Recover. Step 1: Enter email & send recover Token',
+  })
   @ApiBody({ type: EmailDto })
   @ApiResponse({
     status: 200,
@@ -269,7 +283,9 @@ export class AuthController {
   @Recaptcha()
   @Post('recover/verify-recover')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Step 2: Verify recover with received Token' })
+  @ApiOperation({
+    summary: 'Recover. Step 2: Verify recover with received Token',
+  })
   @ApiBody({ type: VerifyDto })
   @ApiResponse({
     status: 200,
@@ -289,7 +305,9 @@ export class AuthController {
   @Recaptcha()
   @Post('recover/new-password')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Step 3: Complete recover and set new password' })
+  @ApiOperation({
+    summary: 'Recover. Step 3: Complete recover and set new password',
+  })
   @ApiBody({ type: RecoverDto })
   @ApiResponse({
     status: 200,

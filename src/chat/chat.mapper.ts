@@ -10,87 +10,99 @@ import {
 
 import {
   ChatWithMembersAndMessages,
-  MessageWithSenderAndStatus,
+  MessageWithSenderAndStatuses,
 } from './shared/types';
+import { ChatInfoResponseDto } from './shared/dto/chat-info-response.dto';
 
 @Injectable()
 export class ChatMapper {
-  public toChatItemDto(
+  private resolveChatInfo(
     chat: ChatWithMembersAndMessages,
     userId: string,
-  ): ChatItemDto {
-    const { messages, members, _count, ...chatData } = chat;
-
-    let title = chatData.title;
-    let picture = chatData.picture;
-
-    if (chatData.type === ChatType.PRIVATE) {
-      const otherMember = members.find((m) => m.user.id !== userId);
-      if (otherMember) {
-        title = otherMember.user.login || otherMember.user.name;
-        picture = otherMember.user.picture;
-      }
-    }
-
-    const lastMessageRaw = messages[0] ?? null;
-    const lastMessage = lastMessageRaw
-      ? this.toMessageResponseDto(lastMessageRaw, userId)
-      : undefined;
-
-    return {
-      id: chatData.id,
-      title: title || '',
-      ...(picture && { picture }),
-      unreadCount: _count?.messages ?? 0,
-      lastMessage,
-    };
-  }
-
-  public toChatDto(chat: ChatWithMembersAndMessages, userId: string): ChatDto {
+  ): ChatInfoResponseDto {
     let title = chat.title;
+    let picture = chat.picture;
 
     if (chat.type === ChatType.PRIVATE) {
       const otherMember = chat.members.find((m) => m.user.id !== userId);
       if (otherMember) {
-        title = otherMember.user.login || otherMember.user.name;
+        title = otherMember.user.name || otherMember.user.login || 'Unknown';
+        picture = null;
       }
     }
 
     return {
       title: title || 'Chat',
       additionalInfo: 'additional info',
+      picture: picture || '',
+    };
+  }
+
+  private resolveMessageStatus(
+    message: MessageWithSenderAndStatuses,
+    userId: string,
+  ): MessageStatusType | undefined {
+    if (message.sender.id !== userId) {
+      return undefined;
+    }
+
+    return message.statuses[0]?.status;
+  }
+
+  public toChatItemDto(
+    chat: ChatWithMembersAndMessages,
+    userId: string,
+  ): ChatItemDto {
+    const { messages, _count, ...chatData } = chat;
+
+    const chatInfo = this.resolveChatInfo(chat, userId);
+
+    const lastMessageRaw = messages[0] ?? null;
+    const lastMessage = lastMessageRaw
+      ? this.toMessageResponseDto(lastMessageRaw, userId)
+      : undefined;
+
+    // fix bug with unreadCount
+    console.log('unreadCount', _count?.messages);
+    // LOGS
+    // unreadCount 0
+    // unreadCount 5
+    // unreadCount 0
+    // unreadCount 7
+
+    return {
+      id: chatData.id,
+      title: chatInfo.title,
+      picture: chatInfo.picture,
+      unreadCount: _count?.messages ?? 0,
+      lastMessage,
+    };
+  }
+
+  public toChatDto(chat: ChatWithMembersAndMessages, userId: string): ChatDto {
+    const chatInfo = this.resolveChatInfo(chat, userId);
+    return {
+      title: chatInfo.title,
+      additionalInfo: chatInfo.additionalInfo,
       messages: chat.messages.map((m) => this.toMessageResponseDto(m, userId)),
     };
   }
 
   public toMessageResponseDto(
-    message: MessageWithSenderAndStatus,
+    message: MessageWithSenderAndStatuses,
     userId: string,
   ): MessageResponseDto {
     const { sender, ...messageData } = message;
 
     return {
       id: messageData.id,
-      content: messageData.content || '',
+      content: messageData.content,
       type: messageData.type,
-      replyToId: messageData.replyToId || undefined,
       sender: sender as MessageSenderDto,
+      ...(messageData.replyToId && { replyToId: messageData.replyToId }),
       status: this.resolveMessageStatus(message, userId),
       createdAt: messageData.createdAt.toISOString(),
       updatedAt: messageData.updatedAt.toISOString(),
     };
-  }
-
-  private resolveMessageStatus(
-    message: MessageWithSenderAndStatus,
-    userId: string,
-  ): MessageStatusType {
-    if (message.statuses && message.statuses.length > 0) {
-      if (message.senderId === userId) {
-        return message.statuses[0]?.status ?? MessageStatusType.SENT;
-      }
-    }
-
-    return MessageStatusType.SENT;
   }
 }
