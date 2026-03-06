@@ -58,7 +58,7 @@ export class ChatController {
   // ────────────────────────────────────────────────
   @Get(':id')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Get chat messages' })
+  @ApiOperation({ summary: 'Get chat with messages' })
   @ApiResponse({
     status: 200,
     type: ChatDto,
@@ -76,7 +76,7 @@ export class ChatController {
     @Param('id') id: string,
     @Request() req: RequestWithUser,
   ) {
-    return this.chatService.getChat(id, req.user.id);
+    return this.chatService.getChatWithMessages(id, req.user.id);
   }
 
   // ────────────────────────────────────────────────
@@ -103,12 +103,6 @@ export class ChatController {
     @Body() dto: MessageDto,
     @Request() req: RequestWithUser,
   ) {
-    const newMessage = await this.chatService.createMessage(
-      id,
-      req.user.id,
-      dto,
-    );
-
-    return newMessage;
+    return this.chatService.createMessage(id, req.user.id, dto);
   }
 }

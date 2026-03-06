@@ -7,12 +7,11 @@ export const USER_SELECT = {
   picture: true,
 } as const;
 
-export const MESSAGE_INCLUDE = (userId: string) =>
+export const MESSAGE_INCLUDE = () =>
   ({
     sender: { select: USER_SELECT },
     statuses: {
-      where: { userId },
-      select: { status: true },
+      select: { userId: true, status: true },
     },
   }) as const;
 
@@ -38,6 +37,6 @@ export const CHAT_INCLUDE = (userId: string) =>
     messages: {
       take: 1,
       orderBy: { createdAt: 'desc' as const },
-      include: MESSAGE_INCLUDE(userId),
+      include: MESSAGE_INCLUDE(),
     },
   }) as const;

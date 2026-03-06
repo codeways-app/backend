@@ -4,8 +4,8 @@ export class MessageSenderDto {
   @ApiProperty()
   id: string;
 
-  @ApiProperty()
-  login: string;
+  @ApiPropertyOptional()
+  login?: string;
 
   @ApiPropertyOptional()
   name?: string;
