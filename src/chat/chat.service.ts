@@ -57,6 +57,8 @@ export class ChatService {
       orderBy: { updatedAt: 'desc' },
     });
 
+    console.log('chats', JSON.stringify(chats, null, 4));
+
     return chats.map((chat) => this.chatMapper.toChatItemDto(chat, userId));
   }
 

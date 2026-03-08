@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthMethod } from '../../generated/prisma/client';
@@ -18,10 +18,6 @@ export class UserService {
       },
     });
 
-    if (!user) {
-      this.logger.error(`User ID ${id} not found`);
-      throw new NotFoundException('User not found');
-    }
     return user;
   }
 
@@ -31,10 +27,7 @@ export class UserService {
         login,
       },
     });
-    if (!user) {
-      this.logger.error(`User ${login} not found`);
-      throw new NotFoundException('User not found');
-    }
+
     return user;
   }
 
@@ -44,10 +37,7 @@ export class UserService {
         email,
       },
     });
-    if (!user) {
-      this.logger.error(`User email ${email} not found`);
-      throw new NotFoundException('User not found');
-    }
+
     return user;
   }
 
