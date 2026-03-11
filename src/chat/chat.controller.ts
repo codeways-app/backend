@@ -15,11 +15,10 @@ import { AuthGuard } from '../auth/shared/guards/auth.guard';
 import type { RequestWithUser } from '../auth/shared/types';
 
 import { ChatService } from './chat.service';
-import { EventsGateway } from './events.gateway';
 
 import {
-  ChatItemDto,
-  ChatDto,
+  ChatItemResponseDto,
+  ChatResponseDto,
   MessageResponseDto,
   MessageDto,
 } from './shared/dto';
@@ -30,8 +29,7 @@ import {
 export class ChatController {
   constructor(
     private readonly chatService: ChatService,
-    private readonly eventsGateway: EventsGateway,
-  ) {}
+  ) { }
 
   // ────────────────────────────────────────────────
   // Get all chats for current user
@@ -41,7 +39,7 @@ export class ChatController {
   @ApiOperation({ summary: 'Get all chats of current user' })
   @ApiResponse({
     status: 200,
-    type: ChatItemDto,
+    type: ChatItemResponseDto,
     isArray: true,
     description: "List of user's chats",
   })
@@ -61,7 +59,7 @@ export class ChatController {
   @ApiOperation({ summary: 'Get chat with messages' })
   @ApiResponse({
     status: 200,
-    type: ChatDto,
+    type: ChatResponseDto,
     description: 'User chat messages',
   })
   @ApiResponse({
