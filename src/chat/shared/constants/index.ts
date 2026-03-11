@@ -28,7 +28,7 @@ export const CHAT_INCLUDE = (userId: string) =>
           where: {
             NOT: { senderId: userId },
             statuses: {
-              none: { userId, status: MessageStatusType.READ },
+              none: { status: MessageStatusType.READ },
             },
           },
         },

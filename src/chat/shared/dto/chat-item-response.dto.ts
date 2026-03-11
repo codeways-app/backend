@@ -2,7 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import { MessageResponseDto } from './message-response.dto';
 
-export class ChatItemDto {
+export class ChatItemResponseDto {
   @ApiProperty()
   id: string;
 

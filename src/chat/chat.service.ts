@@ -10,7 +10,7 @@ import { MessageStatusType, ContentType } from '../../generated/prisma';
 import { MessageDto } from './shared/dto/message.dto';
 import { EventsGateway } from './events.gateway';
 import { ChatMapper } from './chat.mapper';
-import { ChatItemDto, ChatDto, MessageResponseDto } from './shared/dto';
+import { ChatItemResponseDto, ChatResponseDto, MessageResponseDto } from './shared/dto';
 
 import { CHAT_INCLUDE, MESSAGE_INCLUDE, USER_SELECT } from './shared/constants';
 
@@ -23,7 +23,7 @@ export class ChatService {
     private readonly eventsGateway: EventsGateway,
     private readonly prismaService: PrismaService,
     private readonly chatMapper: ChatMapper,
-  ) {}
+  ) { }
 
   public async markMessagesAsRead(
     chatId: string,
@@ -48,7 +48,7 @@ export class ChatService {
     return !!member;
   }
 
-  public async getUserChats(userId: string): Promise<ChatItemDto[]> {
+  public async getUserChats(userId: string): Promise<ChatItemResponseDto[]> {
     const chats = await this.prismaService.chat.findMany({
       where: {
         members: { some: { userId } },
@@ -57,13 +57,15 @@ export class ChatService {
       orderBy: { updatedAt: 'desc' },
     });
 
+    console.log('chats', JSON.stringify(chats, null, 4));
+
     return chats.map((chat) => this.chatMapper.toChatItemDto(chat, userId));
   }
 
   public async getChatWithMessages(
     chatId: string,
     userId: string,
-  ): Promise<ChatDto> {
+  ): Promise<ChatResponseDto> {
     // TODO: mark messages as read
     // await this.markMessagesAsRead(chatId, userId);
 

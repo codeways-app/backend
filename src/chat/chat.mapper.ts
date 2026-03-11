@@ -2,24 +2,24 @@ import { Injectable } from '@nestjs/common';
 import { ChatType, MessageStatusType } from '../../generated/prisma';
 
 import {
-  ChatItemDto,
-  ChatDto,
+  ChatItemResponseDto,
+  ChatResponseDto,
   MessageResponseDto,
   MessageSenderDto,
 } from './shared/dto';
-
 import {
+  ChatInfo,
   ChatWithMembersAndMessages,
   MessageWithSenderAndStatuses,
 } from './shared/types';
-import { ChatInfoResponseDto } from './shared/dto/chat-info-response.dto';
+
 
 @Injectable()
 export class ChatMapper {
   private resolveChatInfo(
     chat: ChatWithMembersAndMessages,
     userId: string,
-  ): ChatInfoResponseDto {
+  ): ChatInfo {
     let title = chat.title;
     let picture = chat.picture;
 
@@ -52,7 +52,7 @@ export class ChatMapper {
   public toChatItemDto(
     chat: ChatWithMembersAndMessages,
     userId: string,
-  ): ChatItemDto {
+  ): ChatItemResponseDto {
     const { messages, _count, ...chatData } = chat;
 
     const chatInfo = this.resolveChatInfo(chat, userId);
@@ -63,7 +63,7 @@ export class ChatMapper {
       : undefined;
 
     // fix bug with unreadCount
-    console.log('unreadCount', _count?.messages);
+    console.log('unreadCount', _count);
     // LOGS
     // unreadCount 0
     // unreadCount 5
@@ -79,11 +79,13 @@ export class ChatMapper {
     };
   }
 
-  public toChatDto(chat: ChatWithMembersAndMessages, userId: string): ChatDto {
+  public toChatDto(chat: ChatWithMembersAndMessages, userId: string): ChatResponseDto {
     const chatInfo = this.resolveChatInfo(chat, userId);
+
     return {
       title: chatInfo.title,
       additionalInfo: chatInfo.additionalInfo,
+      picture: chatInfo.picture,
       messages: chat.messages.map((m) => this.toMessageResponseDto(m, userId)),
     };
   }

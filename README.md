@@ -46,6 +46,10 @@ To start the project, follow these steps:
 
 - Server - [http://localhost:3000](http://localhost:3000)
 
+## Swagger Documentation
+
+- Swagger API Docs - [http://localhost:3000/api-docs](http://localhost:3000/api-docs)
+
 ## Commits
 
 - [Conventional Commits](https://www.conventionalcommits.org) - specification for writing clear and consistent commit messages.
