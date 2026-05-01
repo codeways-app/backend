@@ -63,7 +63,7 @@ export class ChatMapper {
       : undefined;
 
     // fix bug with unreadCount
-    console.log('unreadCount', _count);
+    // console.log('unreadCount', _count);
     // LOGS
     // unreadCount 0
     // unreadCount 5

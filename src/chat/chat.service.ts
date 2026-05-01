@@ -54,9 +54,15 @@ export class ChatService {
         members: { some: { userId } },
       },
       include: CHAT_INCLUDE(userId),
-      orderBy: { updatedAt: 'desc' },
     });
 
+    chats.sort((a, b) => {
+      const dateA = a.messages.length > 0 ? a.messages[0].createdAt : a.createdAt;
+      const dateB = b.messages.length > 0 ? b.messages[0].createdAt : b.createdAt;
+      return dateB.getTime() - dateA.getTime();
+    });
+
+    // also bug with unreadCount
     console.log('chats', JSON.stringify(chats, null, 4));
 
     return chats.map((chat) => this.chatMapper.toChatItemDto(chat, userId));
