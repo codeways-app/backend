@@ -14,4 +14,7 @@ export class ChatResponseDto {
 
   @ApiProperty({ type: [MessageResponseDto] })
   messages: MessageResponseDto[];
+
+  @ApiProperty()
+  isGroup: boolean;
 }

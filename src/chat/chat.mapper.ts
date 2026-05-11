@@ -13,7 +13,6 @@ import {
   MessageWithSenderAndStatuses,
 } from './shared/types';
 
-
 @Injectable()
 export class ChatMapper {
   private resolveChatInfo(
@@ -35,6 +34,7 @@ export class ChatMapper {
       title: title || 'Chat',
       additionalInfo: 'additional info',
       picture: picture || '',
+      isGroup: chat.type === ChatType.GROUP,
     };
   }
 
@@ -63,7 +63,7 @@ export class ChatMapper {
       : undefined;
 
     // fix bug with unreadCount
-    console.log('unreadCount', _count);
+    // console.log('unreadCount', _count);
     // LOGS
     // unreadCount 0
     // unreadCount 5
@@ -76,16 +76,21 @@ export class ChatMapper {
       picture: chatInfo.picture,
       unreadCount: _count?.messages ?? 0,
       lastMessage,
+      isGroup: chatInfo.isGroup,
     };
   }
 
-  public toChatDto(chat: ChatWithMembersAndMessages, userId: string): ChatResponseDto {
+  public toChatDto(
+    chat: ChatWithMembersAndMessages,
+    userId: string,
+  ): ChatResponseDto {
     const chatInfo = this.resolveChatInfo(chat, userId);
 
     return {
       title: chatInfo.title,
       additionalInfo: chatInfo.additionalInfo,
       picture: chatInfo.picture,
+      isGroup: chatInfo.isGroup,
       messages: chat.messages.map((m) => this.toMessageResponseDto(m, userId)),
     };
   }

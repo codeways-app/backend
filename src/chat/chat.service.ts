@@ -10,7 +10,11 @@ import { MessageStatusType, ContentType } from '../../generated/prisma';
 import { MessageDto } from './shared/dto/message.dto';
 import { EventsGateway } from './events.gateway';
 import { ChatMapper } from './chat.mapper';
-import { ChatItemResponseDto, ChatResponseDto, MessageResponseDto } from './shared/dto';
+import {
+  ChatItemResponseDto,
+  ChatResponseDto,
+  MessageResponseDto,
+} from './shared/dto';
 
 import { CHAT_INCLUDE, MESSAGE_INCLUDE, USER_SELECT } from './shared/constants';
 
@@ -23,7 +27,7 @@ export class ChatService {
     private readonly eventsGateway: EventsGateway,
     private readonly prismaService: PrismaService,
     private readonly chatMapper: ChatMapper,
-  ) { }
+  ) {}
 
   public async markMessagesAsRead(
     chatId: string,
@@ -54,10 +58,18 @@ export class ChatService {
         members: { some: { userId } },
       },
       include: CHAT_INCLUDE(userId),
-      orderBy: { updatedAt: 'desc' },
     });
 
-    console.log('chats', JSON.stringify(chats, null, 4));
+    chats.sort((a, b) => {
+      const dateA =
+        a.messages.length > 0 ? a.messages[0].createdAt : a.createdAt;
+      const dateB =
+        b.messages.length > 0 ? b.messages[0].createdAt : b.createdAt;
+      return dateB.getTime() - dateA.getTime();
+    });
+
+    // also bug with unreadCount // i think fixed
+    // console.log('chats', JSON.stringify(chats, null, 4));
 
     return chats.map((chat) => this.chatMapper.toChatItemDto(chat, userId));
   }
@@ -67,7 +79,7 @@ export class ChatService {
     userId: string,
   ): Promise<ChatResponseDto> {
     // TODO: mark messages as read
-    // await this.markMessagesAsRead(chatId, userId);
+    await this.markMessagesAsRead(chatId, userId);
 
     const chatMessages = await this.prismaService.chat.findFirst({
       where: {

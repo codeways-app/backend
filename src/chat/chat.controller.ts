@@ -27,9 +27,7 @@ import {
 @UseGuards(AuthGuard)
 @Controller('chats')
 export class ChatController {
-  constructor(
-    private readonly chatService: ChatService,
-  ) { }
+  constructor(private readonly chatService: ChatService) {}
 
   // ────────────────────────────────────────────────
   // Get all chats for current user
