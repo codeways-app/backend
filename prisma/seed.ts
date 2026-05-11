@@ -28,6 +28,15 @@ const usersToSeed = [
     method: AuthMethod.CREDENTIALS,
     role: UserRole.REGULAR,
   },
+  {
+    id: '33cd9b5d-3e49-4911-8994-9941c0c6dd6d',
+    login: 'testuser',
+    email: 'testuser@codeways.online',
+    password: 'TestPassword1',
+    isTwoFactorEnable: false,
+    method: AuthMethod.CREDENTIALS,
+    role: UserRole.REGULAR,
+  },
 ];
 
 interface MessageConfig {
@@ -72,12 +81,15 @@ const chatsToSeed: ChatConfig[] = [
     id: 'd9e1f2a3-b4c5-4d6e-8f90-a1b2c3d4e5f6',
     type: ChatType.GROUP,
     title: 'Project Discussion',
-    members: ['administrator', 'spasontis'],
+    members: ['administrator', 'spasontis', 'testuser'],
     messages: [
       {
         sender: 'administrator',
         content: 'Welcome to the project group!',
-        statuses: [{ user: 'spasontis', status: MessageStatusType.READ }],
+        statuses: [
+          { user: 'spasontis', status: MessageStatusType.READ },
+          { user: 'testuser', status: MessageStatusType.SENT },
+        ],
       },
     ],
   },
@@ -123,6 +135,14 @@ async function main() {
       update: {
         title: chatCfg.title,
         type: chatCfg.type,
+        members: {
+          deleteMany: {},
+          create: chatCfg.members
+            .filter((login) => createdUsers[login])
+            .map((login) => ({
+              userId: createdUsers[login],
+            })),
+        },
       },
       create: {
         id: chatCfg.id,
@@ -138,6 +158,12 @@ async function main() {
       },
     });
     console.log(`Chat ready: ${chat.title || chat.id} (${chat.type})`);
+
+    // Clear existing messages for this chat to avoid duplicates when re-seeding
+    await prisma.messageStatus.deleteMany({
+      where: { message: { chatId: chat.id } },
+    });
+    await prisma.message.deleteMany({ where: { chatId: chat.id } });
 
     for (const msg of chatCfg.messages) {
       const senderId = createdUsers[msg.sender];

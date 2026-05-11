@@ -17,4 +17,7 @@ export class ChatItemResponseDto {
 
   @ApiPropertyOptional()
   unreadCount?: number;
+
+  @ApiProperty()
+  isGroup: boolean;
 }
