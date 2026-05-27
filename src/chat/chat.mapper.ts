@@ -62,14 +62,6 @@ export class ChatMapper {
       ? this.toMessageResponseDto(lastMessageRaw, userId)
       : undefined;
 
-    // fix bug with unreadCount
-    // console.log('unreadCount', _count);
-    // LOGS
-    // unreadCount 0
-    // unreadCount 5
-    // unreadCount 0
-    // unreadCount 7
-
     return {
       id: chatData.id,
       title: chatInfo.title,
