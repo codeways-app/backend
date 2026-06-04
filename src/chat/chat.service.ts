@@ -68,9 +68,6 @@ export class ChatService {
       return dateB.getTime() - dateA.getTime();
     });
 
-    // also bug with unreadCount // i think fixed
-    // console.log('chats', JSON.stringify(chats, null, 4));
-
     return chats.map((chat) => this.chatMapper.toChatItemDto(chat, userId));
   }
 
@@ -78,7 +75,7 @@ export class ChatService {
     chatId: string,
     userId: string,
   ): Promise<ChatResponseDto> {
-    // TODO: mark messages as read
+    // TODO: update mark messages as read by screen view size
     await this.markMessagesAsRead(chatId, userId);
 
     const chatMessages = await this.prismaService.chat.findFirst({

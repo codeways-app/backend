@@ -19,5 +19,5 @@ export class ChatItemResponseDto {
   unreadCount?: number;
 
   @ApiProperty()
-  isGroup: boolean;
+  participantsCount: number;
 }

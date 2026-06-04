@@ -32,9 +32,9 @@ export class ChatMapper {
 
     return {
       title: title || 'Chat',
-      additionalInfo: 'additional info',
+      additionalInfo: 'last seen recently',
       picture: picture || '',
-      isGroup: chat.type === ChatType.GROUP,
+      participantsCount: chat.members.length,
     };
   }
 
@@ -68,7 +68,7 @@ export class ChatMapper {
       picture: chatInfo.picture,
       unreadCount: _count?.messages ?? 0,
       lastMessage,
-      isGroup: chatInfo.isGroup,
+      participantsCount: chatInfo.participantsCount,
     };
   }
 
@@ -82,7 +82,7 @@ export class ChatMapper {
       title: chatInfo.title,
       additionalInfo: chatInfo.additionalInfo,
       picture: chatInfo.picture,
-      isGroup: chatInfo.isGroup,
+      participantsCount: chatInfo.participantsCount,
       messages: chat.messages.map((m) => this.toMessageResponseDto(m, userId)),
     };
   }
