@@ -112,7 +112,7 @@ export class AuthController {
   @Post('register')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Registration.Step 3: Complete registration and create account',
+    summary: 'Registration. Step 3: Complete registration and create account',
   })
   @ApiBody({ type: RegisterDto })
   @ApiResponse({
@@ -142,7 +142,7 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     type: TokensResponse,
-    description: 'User successful logined',
+    description: 'User successfully logged in',
   })
   @ApiResponse({
     status: 401,
@@ -170,7 +170,7 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     type: TokensResponse,
-    description: 'Two-Factor Token successful verified',
+    description: 'Two-Factor Token successfully verified',
   })
   @ApiResponse({
     status: 401,
@@ -199,7 +199,7 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     type: ConnectResponseDto,
-    description: 'User successful logined',
+    description: 'User successfully logged in',
   })
   public async connect(@Param('provider') provider: string) {
     const providerInstance = this.providerService.findByService(provider);
@@ -224,7 +224,7 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     type: TokensResponse,
-    description: 'User successful logined',
+    description: 'User successfully logged in',
   })
   public async callback(
     @Res({ passthrough: true }) res: Response,
@@ -312,7 +312,7 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     type: TokensResponse,
-    description: 'Password successfully reseted',
+    description: 'Password successfully reset',
   })
   @ApiResponse({
     status: 400,

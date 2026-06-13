@@ -1,11 +1,16 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
+
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import * as YAML from 'yaml';
 import { NestExpressApplication } from '@nestjs/platform-express';
+
 import type { Request, Response } from 'express';
+
+import { AppModule } from './app.module';
+
+import * as YAML from 'yaml';
+
 import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
@@ -29,13 +34,17 @@ async function bootstrap() {
   });
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('My API')
+    .setTitle('Codeways API')
     .setDescription('API Documentation')
     .setVersion('1.0.0')
     .addBearerAuth()
     .build();
 
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  const document = SwaggerModule.createDocument(app, swaggerConfig, {
+    operationIdFactory: (_controllerKey: string, methodKey: string) =>
+      methodKey,
+  });
+
   const yamlDocument = YAML.stringify(document);
 
   SwaggerModule.setup('api-docs', app, document);

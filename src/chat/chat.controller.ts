@@ -9,7 +9,12 @@ import {
   Post,
   Body,
 } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 
 import { AuthGuard } from '../auth/shared/guards/auth.guard';
 import type { RequestWithUser } from '../auth/shared/types';
@@ -23,6 +28,7 @@ import {
   MessageDto,
 } from './shared/dto';
 
+@ApiBearerAuth()
 @ApiTags('chats')
 @UseGuards(AuthGuard)
 @Controller('chats')
