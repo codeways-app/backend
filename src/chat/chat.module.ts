@@ -5,8 +5,10 @@ import { SessionService } from '../session/session.service';
 import { ChatController } from './chat.controller';
 import { UserService } from '../user';
 import { ChatMapper } from './chat.mapper';
+import { SearchModule } from '../search';
 
 @Module({
+  imports: [SearchModule],
   providers: [
     EventsGateway,
     ChatService,

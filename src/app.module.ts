@@ -16,6 +16,7 @@ import {
 } from './auth';
 
 import { ChatModule } from './chat';
+import { SearchModule } from './search';
 import { SessionModule } from './session';
 import { UserModule } from './user';
 
@@ -36,6 +37,7 @@ import { UserModule } from './user';
     ProviderModule,
     RecoverModule,
     ChatModule,
+    SearchModule,
   ],
 })
 export class AppModule {}

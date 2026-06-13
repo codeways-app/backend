@@ -17,6 +17,7 @@ import {
 } from './shared/dto';
 
 import { CHAT_INCLUDE, MESSAGE_INCLUDE, USER_SELECT } from './shared/constants';
+import { SearchService } from '../search';
 
 @Injectable()
 export class ChatService {
@@ -27,6 +28,7 @@ export class ChatService {
     private readonly eventsGateway: EventsGateway,
     private readonly prismaService: PrismaService,
     private readonly chatMapper: ChatMapper,
+    private readonly searchService: SearchService,
   ) {}
 
   public async markMessagesAsRead(
@@ -137,6 +139,12 @@ export class ChatService {
     this.eventsGateway.emitMessage(chatId, result);
 
     await this.markMessagesAsRead(chatId, userId);
+
+    void this.searchService.indexMessage(
+      newMessage.id,
+      chatId,
+      message.content,
+    );
 
     return result;
   }

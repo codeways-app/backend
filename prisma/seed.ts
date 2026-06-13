@@ -95,6 +95,56 @@ const chatsToSeed: ChatConfig[] = [
   },
 ];
 
+function escSql(value: string): string {
+  return `'${value.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
+}
+
+const manticoreSqlUrl = `http://${process.env.MANTICORE_HOST || '127.0.0.1'}:${process.env.MANTICORE_HTTP_PORT || '9308'}/sql?mode=raw`;
+
+interface ManticoreSqlResult {
+  data?: Array<Record<string, string>>;
+  error?: string;
+}
+
+// Manticore HTTP /sql endpoint expects raw SQL text in the request body
+async function runManticoreSql(sql: string): Promise<void> {
+  const response = await fetch(manticoreSqlUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: sql,
+  });
+
+  const [result] = (await response.json()) as ManticoreSqlResult[];
+  if (result?.error) {
+    throw new Error(result.error);
+  }
+}
+
+async function seedManticore() {
+  try {
+    await runManticoreSql('DROP TABLE IF EXISTS messages_search');
+    await runManticoreSql(
+      "CREATE TABLE messages_search (message_id string, chat_id string, content text) " +
+        "morphology='stem_en,stem_ru' " +
+        "charset_table='0..9, A..Z->a..z, a..z, U+410..U+42F->U+430..U+44F, U+430..U+44F, U+401->U+451, U+451'",
+    );
+
+    const messages = await prisma.message.findMany({
+      select: { id: true, chatId: true, content: true },
+    });
+
+    for (const msg of messages) {
+      await runManticoreSql(
+        `INSERT INTO messages_search (message_id, chat_id, content) VALUES (${escSql(msg.id)}, ${escSql(msg.chatId)}, ${escSql(msg.content)})`,
+      );
+    }
+
+    console.log(`Manticore index seeded with ${messages.length} messages`);
+  } catch (e) {
+    console.warn('Manticore is not reachable, skipping search index seed:', e);
+  }
+}
+
 async function main() {
   const createdUsers: Record<string, string> = {};
 
@@ -192,6 +242,8 @@ async function main() {
     }
     console.log(`Messages seeded for chat: ${chat.title || chat.id}`);
   }
+
+  await seedManticore();
 }
 
 main()
