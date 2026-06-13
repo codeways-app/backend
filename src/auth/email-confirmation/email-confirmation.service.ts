@@ -23,7 +23,6 @@ export class EmailConfirmationService {
     private readonly userService: UserService,
   ) {}
 
-  // --- SEND TOKEN ---
   public async sendToken(email: string, tokenType: TokenType): Promise<void> {
     if (tokenType === TokenType.VERIFICATION) {
       const isEmailExists = await this.userService.findByEmail(email);
@@ -55,7 +54,6 @@ export class EmailConfirmationService {
     );
   }
 
-  // --- GENERATE TOKEN ---
   public async generateToken(email: string, tokenType: TokenType) {
     const token = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresIn = new Date(new Date().getTime() + 15 * 60 * 1000);
@@ -86,7 +84,6 @@ export class EmailConfirmationService {
     return verificationToken;
   }
 
-  // --- DELETE TOKEN ---
   public async deleteToken(email: string, tokenType: TokenType) {
     await this.prismaService.token.deleteMany({
       where: {
@@ -96,7 +93,6 @@ export class EmailConfirmationService {
     });
   }
 
-  // --- VERIFY TOKEN ---
   public async isTokenMatch(
     email: string,
     token: string,
