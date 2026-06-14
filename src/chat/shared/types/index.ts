@@ -1,8 +1,5 @@
 export type { UserBasicInfo } from './user.type';
-export type {
-  MessageBasicInfo,
-  MessageWithSenderAndStatuses,
-} from './message.types';
+export type { MessageBasicInfo, MessageWithSender } from './message.types';
 export type {
   ChatBasicInfo,
   ChatMemberBasicInfo,

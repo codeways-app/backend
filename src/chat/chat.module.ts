@@ -1,14 +1,20 @@
 import { Module } from '@nestjs/common';
-import { EventsGateway } from './events.gateway';
-import { ChatService } from './chat.service';
+import { MulterModule } from '@nestjs/platform-express';
+
 import { SessionService } from '../session/session.service';
-import { ChatController } from './chat.controller';
+
+import { chatFilesMulterOptions } from './shared/utils';
+
 import { UserService } from '../user';
-import { ChatMapper } from './chat.mapper';
 import { SearchModule } from '../search';
 
+import { EventsGateway } from './events.gateway';
+import { ChatService } from './chat.service';
+import { ChatController } from './chat.controller';
+import { ChatMapper } from './chat.mapper';
+
 @Module({
-  imports: [SearchModule],
+  imports: [SearchModule, MulterModule.register(chatFilesMulterOptions)],
   providers: [
     EventsGateway,
     ChatService,

@@ -28,4 +28,16 @@ export class MessageResponseDto {
 
   @ApiPropertyOptional()
   replyToId?: string;
+
+  @ApiPropertyOptional()
+  fileName?: string;
+
+  @ApiPropertyOptional()
+  fileSize?: number;
+
+  @ApiPropertyOptional()
+  mimeType?: string;
+
+  @ApiPropertyOptional()
+  fileUrl?: string;
 }

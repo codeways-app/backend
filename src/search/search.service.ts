@@ -186,7 +186,7 @@ export class SearchService implements OnModuleInit {
     const [chats, matchedMessages] = await Promise.all([
       this.prismaService.chat.findMany({
         where: { id: { in: matchingIds } },
-        include: CHAT_INCLUDE(userId),
+        include: CHAT_INCLUDE(),
       }),
       this.prismaService.message.findMany({
         where: { id: { in: [...matchedMessageIdByChatId.values()] } },
@@ -196,18 +196,31 @@ export class SearchService implements OnModuleInit {
 
     const matchedMessageById = new Map(matchedMessages.map((m) => [m.id, m]));
 
-    return chats.map((chat) => {
-      const dto = this.chatMapper.toChatItemDto(chat, userId);
-      const matchedMessage = matchedMessageById.get(
-        matchedMessageIdByChatId.get(chat.id) ?? '',
-      );
-      if (matchedMessage) {
-        dto.lastMessage = this.chatMapper.toMessageResponseDto(
-          matchedMessage,
-          userId,
+    return Promise.all(
+      chats.map(async (chat) => {
+        const member = chat.members.find((m) => m.userId === userId);
+        const unreadCount = await this.prismaService.message.count({
+          where: {
+            chatId: chat.id,
+            senderId: { not: userId },
+            createdAt: { gt: member?.lastReadAt ?? new Date(0) },
+          },
+        });
+
+        const dto = this.chatMapper.toChatItemDto(chat, userId, unreadCount);
+        const matchedMessage = matchedMessageById.get(
+          matchedMessageIdByChatId.get(chat.id) ?? '',
         );
-      }
-      return dto;
-    });
+        if (matchedMessage) {
+          dto.lastMessage = this.chatMapper.toMessageResponseDto(
+            matchedMessage,
+            userId,
+            chat.id,
+            chat.members,
+          );
+        }
+        return dto;
+      }),
+    );
   }
 }

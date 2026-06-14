@@ -1,6 +1,6 @@
 import { Chat, ChatMember } from '../../../../generated/prisma';
 import { UserBasicInfo } from './user.type';
-import { MessageWithSenderAndStatuses } from './message.types';
+import { MessageWithSender } from './message.types';
 
 export type ChatBasicInfo = Pick<
   Chat,
@@ -13,6 +13,5 @@ export type ChatMemberBasicInfo = ChatMember & {
 
 export type ChatWithMembersAndMessages = ChatBasicInfo & {
   members: ChatMemberBasicInfo[];
-  messages: MessageWithSenderAndStatuses[];
-  _count?: { messages: number };
+  messages: MessageWithSender[];
 };
