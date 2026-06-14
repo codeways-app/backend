@@ -150,6 +150,52 @@ describe('ChatMapper - read status & unread counts', () => {
     });
   });
 
+  describe('toMessageResponseDto - replies', () => {
+    it('includes replyToId when the message is a reply', () => {
+      const message = buildMessage({ replyToId: 'message-0' });
+
+      const dto = mapper.toMessageResponseDto(message, senderId, 'chat-1');
+
+      expect(dto.replyToId).toBe('message-0');
+    });
+
+    it('omits replyToId when the message is not a reply', () => {
+      const message = buildMessage();
+
+      const dto = mapper.toMessageResponseDto(message, senderId, 'chat-1');
+
+      expect(dto.replyToId).toBeUndefined();
+    });
+  });
+
+  describe('toMessageResponseDto - file attachments', () => {
+    it('includes file metadata and a download URL for non-text messages with a file name', () => {
+      const message = buildMessage({
+        type: ContentType.IMAGE,
+        content: 'chat-1/photo.png',
+        fileName: 'photo.png',
+        fileSize: 1024,
+        mimeType: 'image/png',
+      });
+
+      const dto = mapper.toMessageResponseDto(message, senderId, 'chat-1');
+
+      expect(dto.fileName).toBe('photo.png');
+      expect(dto.fileSize).toBe(1024);
+      expect(dto.mimeType).toBe('image/png');
+      expect(dto.fileUrl).toBe(`/api/chats/chat-1/messages/${message.id}/file`);
+    });
+
+    it('omits file metadata for text messages', () => {
+      const message = buildMessage();
+
+      const dto = mapper.toMessageResponseDto(message, senderId, 'chat-1');
+
+      expect(dto.fileName).toBeUndefined();
+      expect(dto.fileUrl).toBeUndefined();
+    });
+  });
+
   describe('toChatItemDto', () => {
     const buildChat = (
       members: ChatMemberBasicInfo[],
@@ -192,6 +238,61 @@ describe('ChatMapper - read status & unread counts', () => {
       const dto = mapper.toChatItemDto(chat, senderId, 0);
 
       expect(dto.title).toBe('Recipient');
+    });
+
+    it('keeps the stored title for group chats', () => {
+      const members = [
+        buildMember(senderId, before),
+        buildMember('member-b', before),
+      ];
+      const chat = buildChat(members);
+      chat.type = ChatType.GROUP;
+      chat.title = 'Project Team';
+
+      const dto = mapper.toChatItemDto(chat, senderId, 0);
+
+      expect(dto.title).toBe('Project Team');
+    });
+
+    it('returns no lastMessage when the chat has no messages', () => {
+      const members = [
+        buildMember(senderId, before),
+        buildMember('recipient', before),
+      ];
+      const chat = buildChat(members);
+      chat.messages = [];
+
+      const dto = mapper.toChatItemDto(chat, senderId, 0);
+
+      expect(dto.lastMessage).toBeUndefined();
+    });
+  });
+
+  describe('toChatDto', () => {
+    it('maps chat info and all messages for the conversation view', () => {
+      const members = [
+        buildMember(senderId, before),
+        buildMember('recipient', before),
+      ];
+      const chat: ChatWithMembersAndMessages = {
+        id: 'chat-1',
+        type: ChatType.GROUP,
+        title: 'Project Team',
+        picture: 'group.png',
+        createdAt: new Date('2024-01-01T00:00:00Z'),
+        updatedAt: new Date('2024-01-01T00:00:00Z'),
+        members,
+        messages: [buildMessage(), buildMessage({ id: 'message-2' })],
+      };
+
+      const dto = mapper.toChatDto(chat, senderId);
+
+      expect(dto.title).toBe('Project Team');
+      expect(dto.picture).toBe('group.png');
+      expect(dto.participantsCount).toBe(2);
+      expect(dto.messages).toHaveLength(2);
+      expect(dto.messages[0].id).toBe('message-1');
+      expect(dto.messages[1].id).toBe('message-2');
     });
   });
 });

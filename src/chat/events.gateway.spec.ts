@@ -1,4 +1,5 @@
 import { WsException } from '@nestjs/websockets';
+import { Logger } from '@nestjs/common';
 
 import { EventsGateway } from './events.gateway';
 import { ChatService } from './chat.service';
@@ -10,13 +11,26 @@ describe('EventsGateway', () => {
   const chatService = { isChatMember: jest.fn() };
 
   let gateway: EventsGateway;
+  let errorSpy: jest.SpyInstance;
+  let logSpy: jest.SpyInstance;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    errorSpy = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
+    logSpy = jest
+      .spyOn(Logger.prototype, 'log')
+      .mockImplementation(() => undefined);
     gateway = new EventsGateway(
       sessionService as unknown as SessionService,
       chatService as unknown as ChatService,
     );
+  });
+
+  afterEach(() => {
+    errorSpy.mockRestore();
+    logSpy.mockRestore();
   });
 
   const buildClient = (userId: string, join: jest.Mock, to: jest.Mock) =>
@@ -47,6 +61,30 @@ describe('EventsGateway', () => {
     });
   });
 
+  describe('handleConnection', () => {
+    it('logs the new connection with the user login', () => {
+      const client = buildClient('user-1', jest.fn(), jest.fn());
+
+      gateway.handleConnection(client);
+
+      expect(logSpy).toHaveBeenCalledWith(
+        'New Websocket connection: login-user-1',
+      );
+    });
+  });
+
+  describe('handleDisconnect', () => {
+    it('logs the disconnection with the user login', () => {
+      const client = buildClient('user-1', jest.fn(), jest.fn());
+
+      gateway.handleDisconnect(client);
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Websocket disconnected: login-user-1',
+      );
+    });
+  });
+
   describe('handleJoinRoom', () => {
     it('throws when the user is not a member of the chat', async () => {
       chatService.isChatMember.mockResolvedValue(false);
@@ -58,6 +96,7 @@ describe('EventsGateway', () => {
         WsException,
       );
       expect(join).not.toHaveBeenCalled();
+      expect(errorSpy).toHaveBeenCalledWith('Access denied: not a chat member');
     });
 
     it('joins the room and notifies it when the user is a member', async () => {

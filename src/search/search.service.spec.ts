@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
+import { Logger } from '@nestjs/common';
 
 import { SearchService } from './search.service';
 import { ChatMapper } from '../chat/chat.mapper';
@@ -31,11 +32,16 @@ describe('SearchService', () => {
     json: () => Promise.resolve([{ data }]),
   });
 
+  let warnSpy: jest.SpyInstance;
+
   beforeEach(async () => {
     jest.clearAllMocks();
     fetchSpy = jest.spyOn(global, 'fetch') as jest.SpiedFunction<
       typeof global.fetch
     >;
+    warnSpy = jest
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -54,6 +60,7 @@ describe('SearchService', () => {
 
   afterEach(() => {
     fetchSpy.mockRestore();
+    warnSpy.mockRestore();
   });
 
   describe('search', () => {
@@ -227,6 +234,10 @@ describe('SearchService', () => {
       await expect(
         service.indexMessage('message-1', chatId, 'hello'),
       ).resolves.toBeUndefined();
+      expect(warnSpy).toHaveBeenCalledWith(
+        'Failed to index message message-1',
+        expect.any(Error),
+      );
     });
   });
 });
