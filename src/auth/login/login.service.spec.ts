@@ -1,4 +1,8 @@
-import { NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  Logger,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { verify } from 'argon2';
 
 import { LoginService } from './login.service';
@@ -20,6 +24,7 @@ describe('LoginService', () => {
   };
 
   let service: LoginService;
+  let errorSpy: jest.SpyInstance;
 
   const user = {
     id: 'user-1',
@@ -32,12 +37,19 @@ describe('LoginService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    errorSpy = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
     sessionService.encrypt.mockResolvedValue('access-token');
     service = new LoginService(
       userService as unknown as UserService,
       sessionService as unknown as SessionService,
       emailConfirmationService as unknown as EmailConfirmationService,
     );
+  });
+
+  afterEach(() => {
+    errorSpy.mockRestore();
   });
 
   describe('login', () => {
@@ -47,6 +59,7 @@ describe('LoginService', () => {
       await expect(
         service.login({ login: 'unknown', password: 'pw' }),
       ).rejects.toThrow(UnauthorizedException);
+      expect(errorSpy).toHaveBeenCalledWith('User unknown not found');
     });
 
     it('throws Unauthorized when the password is invalid', async () => {
@@ -57,6 +70,9 @@ describe('LoginService', () => {
         service.login({ login: user.login, password: 'wrong' }),
       ).rejects.toThrow(UnauthorizedException);
       expect(sessionService.encrypt).not.toHaveBeenCalled();
+      expect(errorSpy).toHaveBeenCalledWith(
+        `Invalid password attempt for user ${user.id}`,
+      );
     });
 
     it('sends a two-factor token and skips issuing a session when 2FA is enabled', async () => {
@@ -109,6 +125,7 @@ describe('LoginService', () => {
       await expect(
         service.twoFactor({ login: 'unknown', token: '123456' }),
       ).rejects.toThrow(NotFoundException);
+      expect(errorSpy).toHaveBeenCalledWith('User not found');
     });
 
     it('verifies the token, clears it and returns a new access token', async () => {
