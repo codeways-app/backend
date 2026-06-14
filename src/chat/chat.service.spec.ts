@@ -1,4 +1,4 @@
-import { ForbiddenException } from '@nestjs/common';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { randomUUID } from 'crypto';
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
@@ -10,13 +10,19 @@ import { EventsGateway } from './events.gateway';
 import { PrismaService } from '../prisma/prisma.service';
 import { SearchService } from '../search';
 import { UPLOADS_DIR } from './shared/utils';
+import { ContentType } from '../../generated/prisma';
 
 describe('ChatService - file uploads', () => {
   let service: ChatService;
 
   const prisma = {
     chatMember: { findFirst: jest.fn(), updateMany: jest.fn() },
-    message: { findMany: jest.fn(), create: jest.fn(), update: jest.fn() },
+    message: {
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
   };
   const eventsGateway = { emitMessage: jest.fn() };
   const chatMapper = {
@@ -124,5 +130,111 @@ describe('ChatService - file uploads', () => {
 
     expect(existsSync(firstFile.path)).toBe(true);
     expect(existsSync(secondFile.path)).toBe(false);
+  });
+
+  describe('isChatMember', () => {
+    it('returns true when a membership record exists', async () => {
+      prisma.chatMember.findFirst.mockResolvedValue({ id: 'member-id' });
+
+      const result = await service.isChatMember(chatId, userId);
+
+      expect(result).toBe(true);
+      expect(prisma.chatMember.findFirst).toHaveBeenCalledWith({
+        where: { chatId, userId },
+        select: { id: true },
+      });
+    });
+
+    it('returns false when no membership record exists', async () => {
+      prisma.chatMember.findFirst.mockResolvedValue(null);
+
+      const result = await service.isChatMember(chatId, userId);
+
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('getFileForDownload', () => {
+    it('throws if the user is not a chat member', async () => {
+      prisma.chatMember.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.getFileForDownload(chatId, 'message-1', userId),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('throws NotFound when the message does not exist', async () => {
+      prisma.message.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.getFileForDownload(chatId, 'message-1', userId),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws NotFound for text messages without a file', async () => {
+      prisma.message.findFirst.mockResolvedValue({
+        type: ContentType.TEXT,
+        content: 'hello',
+        fileName: null,
+        mimeType: null,
+      });
+
+      await expect(
+        service.getFileForDownload(chatId, 'message-1', userId),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws NotFound when the stored file is missing on disk', async () => {
+      prisma.message.findFirst.mockResolvedValue({
+        type: ContentType.IMAGE,
+        content: `${chatId}/missing.png`,
+        fileName: 'missing.png',
+        mimeType: 'image/png',
+      });
+
+      await expect(
+        service.getFileForDownload(chatId, 'message-1', userId),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('returns the absolute path, file name and mime type for a stored file', async () => {
+      const file = writeUploadedFile('file contents');
+      prisma.message.findFirst.mockResolvedValue({
+        type: ContentType.IMAGE,
+        content: `${chatId}/${file.filename}`,
+        fileName: 'photo.png',
+        mimeType: 'image/png',
+      });
+
+      const result = await service.getFileForDownload(
+        chatId,
+        'message-1',
+        userId,
+      );
+
+      expect(result.absolutePath).toBe(
+        join(UPLOADS_DIR, chatId, file.filename),
+      );
+      expect(result.fileName).toBe('photo.png');
+      expect(result.mimeType).toBe('image/png');
+    });
+
+    it('falls back to application/octet-stream when the mime type is unknown', async () => {
+      const file = writeUploadedFile('file contents');
+      prisma.message.findFirst.mockResolvedValue({
+        type: ContentType.FILE,
+        content: `${chatId}/${file.filename}`,
+        fileName: 'archive.bin',
+        mimeType: null,
+      });
+
+      const result = await service.getFileForDownload(
+        chatId,
+        'message-1',
+        userId,
+      );
+
+      expect(result.mimeType).toBe('application/octet-stream');
+    });
   });
 });
