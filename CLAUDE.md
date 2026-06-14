@@ -34,6 +34,16 @@ Feature modules under `src/`:
 
 Entry point `main.ts` configures global validation pipes, Swagger, and CORS.
 
+## Search (Manticore)
+
+`search/` indexes message content into [Manticore Search](https://manticoresearch.com/) and queries it for full-text search, combined with chat title matches from PostgreSQL. On startup it (re)creates the `messages_search` table and reindexes all messages.
+
+Connects via the HTTP `/sql` endpoint at `http://${MANTICORE_HOST}:${MANTICORE_HTTP_PORT}` (defaults to `127.0.0.1:9308`). Run it locally with:
+
+```bash
+docker run -p 9308:9308 manticoresearch/manticore
+```
+
 ## Database (Prisma)
 
 Key models: `User` (auth method, 2FA, role), `Account` (OAuth tokens), `Token` (verification/reset), `Chat`, `ChatMember` (tracks `lastReadAt` for read receipts/unread counts), `Message` (TEXT/IMAGE/VIDEO/FILE, with file metadata and content hash for deduplication).
@@ -46,6 +56,7 @@ Copy `.env.example` to `.env` and fill in:
 - OAuth keys (Google, Yandex)
 - `RESEND_TOKEN`
 - reCAPTCHA secret
+- `MANTICORE_HOST` / `MANTICORE_HTTP_PORT` (optional, defaults to `127.0.0.1` / `9308`)
 
 ## Conventions
 
