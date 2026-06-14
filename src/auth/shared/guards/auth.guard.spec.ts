@@ -1,4 +1,8 @@
-import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import {
+  ExecutionContext,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
 
 import { AuthGuard } from './auth.guard';
 import { UserService } from '../../../user';
@@ -10,13 +14,21 @@ describe('AuthGuard', () => {
   const sessionService = { decrypt: jest.fn() };
 
   let guard: AuthGuard;
+  let errorSpy: jest.SpyInstance;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    errorSpy = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
     guard = new AuthGuard(
       userService as unknown as UserService,
       sessionService as unknown as SessionService,
     );
+  });
+
+  afterEach(() => {
+    errorSpy.mockRestore();
   });
 
   const buildContext = (cookies: Record<string, string>) => {
@@ -35,6 +47,7 @@ describe('AuthGuard', () => {
       UnauthorizedException,
     );
     expect(sessionService.decrypt).not.toHaveBeenCalled();
+    expect(errorSpy).toHaveBeenCalledWith('User is not authorized');
   });
 
   it('throws Unauthorized when the session token is invalid', async () => {
@@ -48,6 +61,7 @@ describe('AuthGuard', () => {
       UnauthorizedException,
     );
     expect(userService.findById).not.toHaveBeenCalled();
+    expect(errorSpy).toHaveBeenCalledWith('Invalid access token request');
   });
 
   it('throws Unauthorized when the session user no longer exists', async () => {
@@ -66,6 +80,7 @@ describe('AuthGuard', () => {
     await expect(guard.canActivate(context)).rejects.toThrow(
       UnauthorizedException,
     );
+    expect(errorSpy).toHaveBeenCalledWith('User user-1 not found');
   });
 
   it('attaches the user to the request and allows access for a valid session', async () => {
