@@ -28,7 +28,6 @@ model User {
 
   accounts Account[]
   messages Message[]
-  messageStatuses MessageStatus[]
   chatMembers ChatMember[]
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -92,6 +91,8 @@ model ChatMember{
   user User @relation(fields: [userId], references: [id])
   userId String @map("user_id")
 
+  lastReadAt DateTime @default(now()) @map("last_read_at")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -107,34 +108,20 @@ model Message {
   sender User @relation(fields: [senderId], references: [id])
   senderId String @map("sender_id")
 
-  content String           
+  content String
 
   type  ContentType @default(TEXT)
   replyToId String? @map("reply_to_id")
 
-  statuses MessageStatus[]
+  fileName String? @map("file_name")
+  fileSize Int?    @map("file_size")
+  mimeType String? @map("mime_type")
+  fileHash String? @map("file_hash")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("messages")
-}
-
-model MessageStatus{
-  id String @id @default(uuid())
-
-  message Message @relation(fields: [messageId], references: [id])
-  messageId String @map("message_id")
-
-  user User @relation(fields: [userId], references: [id])
-  userId String @map("user_id")
-
-  status MessageStatusType @default(SENT)
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@map("message_statuses")
 }
 
 enum UserRole {

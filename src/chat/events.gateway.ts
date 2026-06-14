@@ -7,6 +7,7 @@ import {
 import { UseGuards, Logger } from '@nestjs/common';
 import { Server } from 'socket.io';
 
+import { MessageResponseDto } from './shared/dto';
 import { WsJwtGuard, SocketAuthMiddleware } from './shared/guards';
 import type { AuthenticatedSocket } from './shared/types';
 
@@ -53,7 +54,7 @@ export class EventsGateway {
     client.to(room).emit('broadcasting', room);
   }
 
-  emitMessage(chatId: string, message: any) {
-    this.server.to(chatId).emit('newMessage', message);
+  emitMessage(chatId: string, message: MessageResponseDto) {
+    this.server.to(chatId).emit('newMessage', { chatId, message });
   }
 }
