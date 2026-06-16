@@ -1,0 +1,1 @@
+export { EmojiModule } from './emoji.module';

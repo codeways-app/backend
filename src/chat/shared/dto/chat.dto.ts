@@ -17,4 +17,7 @@ export class ChatResponseDto {
 
   @ApiProperty({ required: false })
   participantsCount?: number;
+
+  @ApiProperty({ required: false })
+  profileLogin?: string;
 }

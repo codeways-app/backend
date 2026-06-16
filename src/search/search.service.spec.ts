@@ -3,12 +3,15 @@ import { ConfigService } from '@nestjs/config';
 import { Logger } from '@nestjs/common';
 
 import { SearchService } from './search.service';
+import { ManticoreClient } from './manticore.client';
+import { SearchIndexer } from './search.indexer';
 import { ChatMapper } from '../chat/chat.mapper';
 import { PrismaService } from '../prisma/prisma.service';
 import { ChatType, ContentType } from '../../generated/prisma';
 
 describe('SearchService', () => {
   let service: SearchService;
+  let client: ManticoreClient;
   let fetchSpy: jest.SpiedFunction<typeof global.fetch>;
 
   const prisma = {
@@ -36,16 +39,14 @@ describe('SearchService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    fetchSpy = jest.spyOn(global, 'fetch') as jest.SpiedFunction<
-      typeof global.fetch
-    >;
-    warnSpy = jest
-      .spyOn(Logger.prototype, 'warn')
-      .mockImplementation(() => undefined);
+    fetchSpy = jest.spyOn(global, 'fetch') as jest.SpiedFunction<typeof global.fetch>;
+    warnSpy = jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SearchService,
+        ManticoreClient,
+        SearchIndexer,
         ChatMapper,
         { provide: PrismaService, useValue: prisma },
         { provide: ConfigService, useValue: configService },
@@ -53,9 +54,10 @@ describe('SearchService', () => {
     }).compile();
 
     service = module.get(SearchService);
-    // Set the Manticore SQL URL without running the full onModuleInit (ensureTable/reindexAll)
-    (service as unknown as { sqlUrl: string }).sqlUrl =
-      'http://127.0.0.1:9308/sql?mode=raw';
+    client = module.get(ManticoreClient);
+
+    client.sqlUrl = 'http://127.0.0.1:9308/sql?mode=raw';
+    client.available = true;
   });
 
   afterEach(() => {
@@ -88,9 +90,7 @@ describe('SearchService', () => {
 
       prisma.chatMember.findMany.mockResolvedValue([{ chatId }]);
       fetchSpy.mockResolvedValue(
-        manticoreResponse([
-          { message_id: 'message-1', chat_id: chatId },
-        ]) as unknown as Response,
+        manticoreResponse([{ message_id: 'message-1', chat_id: chatId }]) as unknown as Response,
       );
       prisma.chat.findMany.mockResolvedValueOnce([]); // title search finds nothing
 
@@ -150,7 +150,6 @@ describe('SearchService', () => {
       expect(result[0].lastMessage?.id).toBe('message-1');
       expect(result[0].lastMessage?.content).toBe('hello world');
 
-      // The match query is wrapped in infix wildcards
       const matchSql = fetchSpy.mock.calls[0][1]?.body as string;
       expect(matchSql).toContain('*hello*');
     });
@@ -204,11 +203,24 @@ describe('SearchService', () => {
       expect(matchSql).toContain('"hello world"');
       expect(matchSql).not.toContain('*hello*');
     });
+
+    it('returns empty when Manticore is unavailable', async () => {
+      client.available = false;
+      // lastConnectAttempt is recent so shouldRetry() returns false
+      (client as unknown as { lastConnectAttempt: number }).lastConnectAttempt = Date.now();
+
+      prisma.chatMember.findMany.mockResolvedValue([{ chatId }]);
+
+      const result = await service.search('hello', userId);
+
+      expect(result).toEqual([]);
+      expect(fetchSpy).not.toHaveBeenCalled();
+    });
   });
 
   describe('indexMessage', () => {
-    it('does nothing if the Manticore SQL URL has not been initialized yet', async () => {
-      (service as unknown as { sqlUrl: string }).sqlUrl = '';
+    it('does nothing when Manticore is unavailable', async () => {
+      client.available = false;
 
       await service.indexMessage('message-1', chatId, 'hello');
 

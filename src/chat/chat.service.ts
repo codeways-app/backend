@@ -247,7 +247,12 @@ export class ChatService {
       where: { id: messageId, chatId },
     });
 
-    if (!message || message.type === ContentType.TEXT || !message.fileName) {
+    if (
+      !message ||
+      message.type === ContentType.TEXT ||
+      message.type === ContentType.EMOJI ||
+      !message.fileName
+    ) {
       throw new NotFoundException('File not found');
     }
 

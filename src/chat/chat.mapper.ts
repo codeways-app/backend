@@ -26,12 +26,14 @@ export class ChatMapper {
   ): ChatInfo {
     let title = chat.title;
     let picture = chat.picture;
+    let profileLogin: string | undefined;
 
     if (chat.type === ChatType.PRIVATE) {
       const otherMember = chat.members.find((m) => m.user.id !== userId);
       if (otherMember) {
         title = otherMember.user.name || otherMember.user.login || 'Unknown';
         picture = null;
+        profileLogin = otherMember.user.login ?? undefined;
       }
     }
 
@@ -40,6 +42,7 @@ export class ChatMapper {
       additionalInfo: 'last seen recently',
       picture: picture || '',
       participantsCount: chat.members.length,
+      profileLogin,
     };
   }
 
@@ -108,6 +111,7 @@ export class ChatMapper {
       additionalInfo: chatInfo.additionalInfo,
       picture: chatInfo.picture,
       participantsCount: chatInfo.participantsCount,
+      ...(chatInfo.profileLogin && { profileLogin: chatInfo.profileLogin }),
       messages: chat.messages.map((m) =>
         this.toMessageResponseDto(m, userId, chat.id, chat.members),
       ),
@@ -123,7 +127,9 @@ export class ChatMapper {
     const { sender, ...messageData } = message;
 
     const hasFile =
-      messageData.type !== ContentType.TEXT && messageData.fileName;
+      messageData.type !== ContentType.TEXT &&
+      messageData.type !== ContentType.EMOJI &&
+      messageData.fileName;
 
     return {
       id: messageData.id,

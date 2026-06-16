@@ -45,7 +45,7 @@ export class EventsGateway {
     );
 
     if (!isMember) {
-      console.log('Access denied: not a chat member');
+      this.logger.error('Access denied: not a chat member');
       throw new WsException('Access denied: not a chat member');
     }
 

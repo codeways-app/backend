@@ -3,4 +3,5 @@ export interface ChatInfo {
   picture: string;
   additionalInfo: string;
   participantsCount: number;
+  profileLogin?: string;
 }
